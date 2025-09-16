@@ -1,0 +1,18 @@
+name: Test Reusable Workflow
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-reusable:
+    name: Test reusable workflow directly
+    uses: ./.github/workflows/python-ci.yml
+    with:
+      python-version: '3.11'
+      source-paths: 'scripts/'
+      test-directory: 'examples/'
+      coverage-threshold: 50
+      run-security: false
+      matrix-testing: false
