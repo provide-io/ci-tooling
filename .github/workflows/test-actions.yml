@@ -26,6 +26,7 @@ jobs:
         with:
           python-version: '3.11'
           uv-version: '0.7.8'
+          cache-dependencies: false
 
       - name: ✅ Verify installation
         shell: bash
@@ -46,6 +47,7 @@ jobs:
         uses: ./actions/setup-python-env
         with:
           python-version: '3.11'
+          cache-dependencies: false
 
       - name: 📝 Create test files
         shell: bash
@@ -79,6 +81,7 @@ jobs:
         uses: ./actions/setup-python-env
         with:
           python-version: '3.11'
+          cache-dependencies: false
 
       - name: 📝 Create test files
         shell: bash
@@ -132,6 +135,7 @@ jobs:
         uses: ./actions/setup-python-env
         with:
           python-version: '3.11'
+          cache-dependencies: false
 
       - name: 📝 Create test files
         shell: bash
@@ -171,6 +175,7 @@ jobs:
         uses: ./actions/setup-python-env
         with:
           python-version: '3.11'
+          cache-dependencies: false
 
       - name: 📝 Create test package
         shell: bash
