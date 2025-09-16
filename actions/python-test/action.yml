@@ -1,0 +1,197 @@
+name: 'Python Tests'
+description: 'Run pytest with coverage reporting for Python projects'
+author: 'provide.io llc'
+
+inputs:
+  test-directory:
+    description: 'Directory containing tests'
+    required: false
+    default: 'tests/'
+  source-directory:
+    description: 'Source directory for coverage'
+    required: false
+    default: 'src/'
+  pytest-args:
+    description: 'Additional pytest arguments'
+    required: false
+    default: '-v'
+  coverage-threshold:
+    description: 'Minimum coverage percentage required'
+    required: false
+    default: '80'
+  coverage-enabled:
+    description: 'Enable coverage reporting'
+    required: false
+    default: 'true'
+  upload-coverage:
+    description: 'Upload coverage to external service'
+    required: false
+    default: 'false'
+  fail-on-threshold:
+    description: 'Fail if coverage below threshold'
+    required: false
+    default: 'true'
+  workenv-path:
+    description: 'Path to workenv directory'
+    required: false
+    default: './workenv'
+  parallel-workers:
+    description: 'Number of parallel test workers (0 for auto)'
+    required: false
+    default: '0'
+
+outputs:
+  test-result:
+    description: 'Test execution result (passed/failed)'
+    value: ${{ steps.tests.outputs.result }}
+  coverage-percentage:
+    description: 'Code coverage percentage'
+    value: ${{ steps.coverage.outputs.percentage }}
+  tests-passed:
+    description: 'Number of tests passed'
+    value: ${{ steps.tests.outputs.passed }}
+  tests-failed:
+    description: 'Number of tests failed'
+    value: ${{ steps.tests.outputs.failed }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🧪 Install test dependencies
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        echo "📦 Installing test dependencies..."
+
+        # Install pytest and coverage tools if not already installed
+        pip list | grep -q pytest || uv pip install pytest
+
+        if [ "${{ inputs.coverage-enabled }}" = "true" ]; then
+          pip list | grep -q pytest-cov || uv pip install pytest-cov
+        fi
+
+        if [ "${{ inputs.parallel-workers }}" != "0" ]; then
+          pip list | grep -q pytest-xdist || uv pip install pytest-xdist
+        fi
+
+    - name: 🧪 Run Tests
+      id: tests
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        echo "🧪 Running tests in: ${{ inputs.test-directory }}"
+
+        # Build pytest command
+        PYTEST_CMD="pytest ${{ inputs.test-directory }} ${{ inputs.pytest-args }}"
+
+        # Add parallel execution if requested
+        if [ "${{ inputs.parallel-workers }}" != "0" ]; then
+          PYTEST_CMD="$PYTEST_CMD -n ${{ inputs.parallel-workers }}"
+        elif [ "${{ inputs.parallel-workers }}" = "auto" ]; then
+          PYTEST_CMD="$PYTEST_CMD -n auto"
+        fi
+
+        # Add coverage if enabled
+        if [ "${{ inputs.coverage-enabled }}" = "true" ]; then
+          PYTEST_CMD="$PYTEST_CMD --cov=${{ inputs.source-directory }} --cov-report=xml --cov-report=term --cov-report=html"
+        fi
+
+        echo "🔍 Running: $PYTEST_CMD"
+
+        # Run tests and capture results
+        if $PYTEST_CMD; then
+          echo "result=passed" >> $GITHUB_OUTPUT
+          echo "✅ Tests passed successfully"
+        else
+          echo "result=failed" >> $GITHUB_OUTPUT
+          echo "❌ Tests failed"
+          exit 1
+        fi
+
+        # Extract test counts from pytest output (if available)
+        if [ -f ".pytest_results" ]; then
+          PASSED=$(grep -o '[0-9]* passed' .pytest_results | cut -d' ' -f1 || echo "0")
+          FAILED=$(grep -o '[0-9]* failed' .pytest_results | cut -d' ' -f1 || echo "0")
+          echo "passed=$PASSED" >> $GITHUB_OUTPUT
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
+        fi
+
+    - name: 📊 Process Coverage
+      id: coverage
+      if: inputs.coverage-enabled == 'true'
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        if [ -f "coverage.xml" ]; then
+          # Extract coverage percentage from XML
+          COVERAGE=$(python -c "
+import xml.etree.ElementTree as ET
+try:
+    tree = ET.parse('coverage.xml')
+    root = tree.getroot()
+    coverage = root.attrib.get('line-rate', '0')
+    print(f'{float(coverage)*100:.1f}')
+except:
+    print('0')
+")
+          echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "📊 Coverage: $COVERAGE%"
+
+          # Check threshold
+          THRESHOLD=${{ inputs.coverage-threshold }}
+          if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
+            echo "⚠️ Coverage $COVERAGE% below threshold $THRESHOLD%"
+            if [ "${{ inputs.fail-on-threshold }}" = "true" ]; then
+              echo "❌ Coverage threshold not met"
+              exit 1
+            fi
+          else
+            echo "✅ Coverage $COVERAGE% meets threshold $THRESHOLD%"
+          fi
+        else
+          echo "⚠️ No coverage.xml found"
+          echo "percentage=0" >> $GITHUB_OUTPUT
+        fi
+
+    - name: 📤 Upload Coverage Reports
+      if: inputs.upload-coverage == 'true' && inputs.coverage-enabled == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports
+        path: |
+          coverage.xml
+          htmlcov/
+        retention-days: 30
+
+    - name: 📊 Test Summary
+      shell: bash
+      run: |
+        echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        TEST_RESULT="${{ steps.tests.outputs.result }}"
+        if [ "$TEST_RESULT" = "passed" ]; then
+          echo "✅ **Tests: PASSED**" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Tests: FAILED**" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [ "${{ inputs.coverage-enabled }}" = "true" ]; then
+          COVERAGE="${{ steps.coverage.outputs.percentage || 0 }}"
+          THRESHOLD="${{ inputs.coverage-threshold }}"
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Coverage:** $COVERAGE% (threshold: $THRESHOLD%)" >> $GITHUB_STEP_SUMMARY
+
+          if (( $(echo "$COVERAGE >= $THRESHOLD" | bc -l) )); then
+            echo "✅ Coverage meets threshold" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Coverage below threshold" >> $GITHUB_STEP_SUMMARY
+          fi
+        fi
+
+branding:
+  icon: 'check-square'
+  color: 'purple'

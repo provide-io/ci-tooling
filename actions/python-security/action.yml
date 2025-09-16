@@ -1,0 +1,297 @@
+name: 'Python Security Scan'
+description: 'Run security scanning with bandit, safety, and pip-audit'
+author: 'provide.io llc'
+
+inputs:
+  source-paths:
+    description: 'Paths to scan for security issues'
+    required: false
+    default: 'src/'
+  scan-dependencies:
+    description: 'Scan dependencies for vulnerabilities'
+    required: false
+    default: 'true'
+  scan-code:
+    description: 'Scan code for security issues'
+    required: false
+    default: 'true'
+  severity-threshold:
+    description: 'Minimum severity level (low, medium, high)'
+    required: false
+    default: 'medium'
+  ignore-ids:
+    description: 'Comma-separated list of vulnerability IDs to ignore'
+    required: false
+    default: ''
+  bandit-config:
+    description: 'Path to bandit configuration file'
+    required: false
+    default: ''
+  fail-on-findings:
+    description: 'Fail action if security issues found'
+    required: false
+    default: 'true'
+  workenv-path:
+    description: 'Path to workenv directory'
+    required: false
+    default: './workenv'
+  generate-sarif:
+    description: 'Generate SARIF report for GitHub Security tab'
+    required: false
+    default: 'true'
+
+outputs:
+  bandit-issues:
+    description: 'Number of bandit security issues found'
+    value: ${{ steps.bandit.outputs.issues }}
+  dependency-vulnerabilities:
+    description: 'Number of dependency vulnerabilities found'
+    value: ${{ steps.deps.outputs.vulnerabilities }}
+  security-passed:
+    description: 'Whether all security checks passed'
+    value: ${{ steps.summary.outputs.passed }}
+  sarif-file:
+    description: 'Path to generated SARIF file'
+    value: ${{ steps.sarif.outputs.file }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🔒 Install security tools
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        echo "📦 Installing security scanning tools..."
+
+        # Install security tools
+        if [ "${{ inputs.scan-code }}" = "true" ]; then
+          pip list | grep -q bandit || uv pip install bandit
+        fi
+
+        if [ "${{ inputs.scan-dependencies }}" = "true" ]; then
+          pip list | grep -q safety || uv pip install safety
+          pip list | grep -q pip-audit || uv pip install pip-audit
+        fi
+
+        if [ "${{ inputs.generate-sarif }}" = "true" ]; then
+          pip list | grep -q bandit-sarif-formatter || uv pip install bandit-sarif-formatter
+        fi
+
+    - name: 🔒 Run Bandit Code Security Scan
+      id: bandit
+      if: inputs.scan-code == 'true'
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        echo "🔍 Running bandit security scan on: ${{ inputs.source-paths }}"
+
+        BANDIT_CMD="bandit -r ${{ inputs.source-paths }}"
+
+        # Add custom config if provided
+        if [ -n "${{ inputs.bandit-config }}" ]; then
+          BANDIT_CMD="$BANDIT_CMD -c ${{ inputs.bandit-config }}"
+        fi
+
+        # Add severity filter
+        case "${{ inputs.severity-threshold }}" in
+          "high")
+            BANDIT_CMD="$BANDIT_CMD -ll"
+            ;;
+          "medium")
+            BANDIT_CMD="$BANDIT_CMD -l"
+            ;;
+          "low")
+            # Include all severities (default)
+            ;;
+        esac
+
+        # Run bandit and capture results
+        ISSUES=0
+        if ! $BANDIT_CMD -f json -o bandit-results.json; then
+          # Count issues from JSON output
+          if [ -f "bandit-results.json" ]; then
+            ISSUES=$(python -c "
+import json
+try:
+    with open('bandit-results.json') as f:
+        data = json.load(f)
+    print(len(data.get('results', [])))
+except:
+    print(0)
+")
+          fi
+        fi
+
+        echo "issues=$ISSUES" >> $GITHUB_OUTPUT
+        echo "🔒 Found $ISSUES bandit security issues"
+
+        # Generate human-readable report
+        if [ -f "bandit-results.json" ]; then
+          $BANDIT_CMD -f txt > bandit-report.txt || true
+        fi
+
+    - name: 🔒 Run Dependency Security Scan
+      id: deps
+      if: inputs.scan-dependencies == 'true'
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        echo "🔍 Scanning dependencies for vulnerabilities..."
+
+        VULNS=0
+
+        # Run safety check
+        echo "Running safety check..."
+        if ! safety check --json --output safety-results.json; then
+          if [ -f "safety-results.json" ]; then
+            SAFETY_VULNS=$(python -c "
+import json
+try:
+    with open('safety-results.json') as f:
+        data = json.load(f)
+    print(len(data))
+except:
+    print(0)
+")
+            VULNS=$((VULNS + SAFETY_VULNS))
+            echo "🔒 Safety found $SAFETY_VULNS vulnerabilities"
+          fi
+        fi
+
+        # Run pip-audit
+        echo "Running pip-audit..."
+        if ! pip-audit --format=json --output=pip-audit-results.json; then
+          if [ -f "pip-audit-results.json" ]; then
+            AUDIT_VULNS=$(python -c "
+import json
+try:
+    with open('pip-audit-results.json') as f:
+        data = json.load(f)
+    print(len(data.get('vulnerabilities', [])))
+except:
+    print(0)
+")
+            VULNS=$((VULNS + AUDIT_VULNS))
+            echo "🔒 pip-audit found $AUDIT_VULNS vulnerabilities"
+          fi
+        fi
+
+        echo "vulnerabilities=$VULNS" >> $GITHUB_OUTPUT
+        echo "🔒 Total dependency vulnerabilities: $VULNS"
+
+    - name: 📄 Generate SARIF Report
+      id: sarif
+      if: inputs.generate-sarif == 'true' && inputs.scan-code == 'true'
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        if [ -f "bandit-results.json" ]; then
+          echo "📄 Converting bandit results to SARIF format..."
+
+          # Convert bandit JSON to SARIF
+          python -c "
+import json
+import sys
+from datetime import datetime
+
+# Load bandit results
+with open('bandit-results.json') as f:
+    bandit_data = json.load(f)
+
+# Create SARIF structure
+sarif = {
+    'version': '2.1.0',
+    'runs': [{
+        'tool': {
+            'driver': {
+                'name': 'bandit',
+                'informationUri': 'https://bandit.readthedocs.io/',
+                'version': bandit_data.get('generated_at', datetime.now().isoformat())
+            }
+        },
+        'results': []
+    }]
+}
+
+# Convert bandit results to SARIF
+for result in bandit_data.get('results', []):
+    sarif_result = {
+        'ruleId': result.get('test_id', 'unknown'),
+        'message': {'text': result.get('issue_text', 'Security issue found')},
+        'level': 'warning',
+        'locations': [{
+            'physicalLocation': {
+                'artifactLocation': {'uri': result.get('filename', 'unknown')},
+                'region': {
+                    'startLine': result.get('line_number', 1),
+                    'startColumn': result.get('col_offset', 1)
+                }
+            }
+        }]
+    }
+    sarif['runs'][0]['results'].append(sarif_result)
+
+# Write SARIF file
+with open('security-results.sarif', 'w') as f:
+    json.dump(sarif, f, indent=2)
+
+print('SARIF report generated: security-results.sarif')
+"
+          echo "file=security-results.sarif" >> $GITHUB_OUTPUT
+        fi
+
+    - name: 📤 Upload Security Reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports
+        path: |
+          bandit-results.json
+          bandit-report.txt
+          safety-results.json
+          pip-audit-results.json
+          security-results.sarif
+        retention-days: 30
+
+    - name: 📊 Security Summary
+      id: summary
+      shell: bash
+      run: |
+        BANDIT_ISSUES="${{ steps.bandit.outputs.issues || 0 }}"
+        DEP_VULNS="${{ steps.deps.outputs.vulnerabilities || 0 }}"
+
+        echo "## 🔒 Security Scan Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Tool | Result | Count |" >> $GITHUB_STEP_SUMMARY
+        echo "|------|--------|-------|" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ inputs.scan-code }}" = "true" ]; then
+          echo "| Bandit (Code) | $([ "$BANDIT_ISSUES" -eq 0 ] && echo "✅ Clean" || echo "⚠️ Issues") | $BANDIT_ISSUES issues |" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [ "${{ inputs.scan-dependencies }}" = "true" ]; then
+          echo "| Dependencies | $([ "$DEP_VULNS" -eq 0 ] && echo "✅ Clean" || echo "⚠️ Vulnerabilities") | $DEP_VULNS vulnerabilities |" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        TOTAL_ISSUES=$((BANDIT_ISSUES + DEP_VULNS))
+        if [ "$TOTAL_ISSUES" -eq 0 ]; then
+          echo "passed=true" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎉 **No security issues found!**" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "passed=false" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Security issues found:** $TOTAL_ISSUES total" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ inputs.fail-on-findings }}" = "true" ]; then
+            echo "❌ Failing due to security findings"
+            exit 1
+          fi
+        fi
+
+branding:
+  icon: 'shield'
+  color: 'red'

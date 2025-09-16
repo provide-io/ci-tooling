@@ -1,0 +1,57 @@
+version: 2
+updates:
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "provide-io/infrastructure"
+    commit-message:
+      prefix: "🔼"
+      include: "scope"
+
+  # Action dependencies in individual action directories
+  - package-ecosystem: "github-actions"
+    directory: "/actions/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "provide-io/infrastructure"
+    commit-message:
+      prefix: "🔼⚙️"
+      include: "scope"
+
+  # Workflow dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/workflows/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "provide-io/infrastructure"
+    commit-message:
+      prefix: "🔼🔄"
+      include: "scope"
+
+  # Python dependencies for scripts
+  - package-ecosystem: "pip"
+    directory: "/scripts/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "provide-io/infrastructure"
+    commit-message:
+      prefix: "🔼🐍"
+      include: "scope"
