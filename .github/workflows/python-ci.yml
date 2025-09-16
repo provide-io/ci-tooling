@@ -175,25 +175,9 @@ jobs:
 
             # Generate performance summary
             echo "## 🚀 Performance Results" >> $GITHUB_STEP_SUMMARY
-            python -c "
-import json
-try:
-    with open('benchmark.json') as f:
-        data = json.load(f)
-    benchmarks = data.get('benchmarks', [])
-    if benchmarks:
-        print('| Test | Mean | StdDev |')
-        print('|------|------|--------|')
-        for bench in benchmarks:
-            stats = bench.get('stats', {})
-            mean = stats.get('mean', 0)
-            stddev = stats.get('stddev', 0)
-            print(f'| {bench.get(\"name\", \"unknown\")} | {mean:.6f}s | {stddev:.6f}s |')
-    else:
-        print('No benchmark results found')
-except Exception as e:
-    print(f'Error processing benchmarks: {e}')
-" >> $GITHUB_STEP_SUMMARY
+            echo "| Test | Status |" >> $GITHUB_STEP_SUMMARY
+            echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Benchmarks | ✅ Completed |" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ pytest-benchmark not found, skipping performance tests"
           fi

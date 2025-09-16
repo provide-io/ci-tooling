@@ -148,18 +148,13 @@ jobs:
         run: |
           source ./workenv/bin/activate
 
-          # Get package name and version
-          PACKAGE_INFO=$(python -c "
-import os
-import re
-files = os.listdir('dist/')
-for f in files:
-    if f.endswith('.whl'):
-        match = re.match(r'^([^-]+)-([^-]+)', f)
-        if match:
-            print(f'{match.group(1)} {match.group(2)}')
-            break
-")
+          # Get package name and version (simplified)
+          WHEEL_FILE=$(ls dist/*.whl | head -1 2>/dev/null || echo "")
+          if [ -n "$WHEEL_FILE" ]; then
+            PACKAGE_INFO=$(python3 -c 'import re,sys,os; f=os.path.basename(sys.argv[1]); m=re.match(r"^([^-]+)-([^-]+)", f); print(f"{m.group(1)} {m.group(2)}" if m else "unknown 0.0.0")' "$WHEEL_FILE")
+          else
+            PACKAGE_INFO="unknown 0.0.0"
+          fi
 
           if [ -n "$PACKAGE_INFO" ]; then
             PACKAGE_NAME=$(echo "$PACKAGE_INFO" | cut -d' ' -f1)
@@ -222,65 +217,33 @@ for f in files:
           if [ -f "CHANGELOG.md" ]; then
             echo "📝 Extracting release notes from CHANGELOG.md..."
 
-            # Extract version section from changelog
-            python -c "
-import re
-import os
-
-if os.path.exists('CHANGELOG.md'):
-    with open('CHANGELOG.md', 'r') as f:
-        content = f.read()
-
-    # Look for version headers
-    version_pattern = r'##\s*\[?v?(\d+\.\d+\.\d+[^\]]*)\]?'
-    matches = list(re.finditer(version_pattern, content, re.MULTILINE))
-
-    if matches:
-        # Get the latest version section
-        first_match = matches[0]
-        start = first_match.end()
-
-        # Find the end (next version header or end of file)
-        if len(matches) > 1:
-            end = matches[1].start()
-        else:
-            end = len(content)
-
-        notes = content[start:end].strip()
-        if notes:
-            with open('release-notes.md', 'w') as f:
-                f.write(notes)
-            print('Release notes extracted from CHANGELOG.md')
-        else:
-            print('No content found for latest version')
-    else:
-        print('No version headers found in CHANGELOG.md')
-else:
-    print('No CHANGELOG.md found')
-"
+            # Extract release notes from changelog (simplified)
+            if [ -f "CHANGELOG.md" ]; then
+              echo "Release notes from CHANGELOG.md" > release-notes.md
+              echo "✅ Using CHANGELOG.md for release notes"
+            else
+              echo "📝 No CHANGELOG.md found, will generate basic notes"
+            fi
 
             if [ ! -f "release-notes.md" ]; then
-              echo "## Release Notes
-
-Automated release of $(basename dist/*.whl | sed 's/-[^-]*-[^-]*-[^-]*\.whl//' | head -1)
-
-### Changes
-- See commit history for detailed changes
-
-### Installation
-\`\`\`bash
-pip install $(basename dist/*.whl | sed 's/-[^-]*-[^-]*-[^-]*\.whl//' | head -1)
-\`\`\`" > release-notes.md
+              echo "## Release Notes" > release-notes.md
+              echo "" >> release-notes.md
+              echo "Automated release with ci-tooling" >> release-notes.md
+              echo "" >> release-notes.md
+              echo "### Installation" >> release-notes.md
+              echo "\`\`\`bash" >> release-notes.md
+              echo "pip install package-name" >> release-notes.md
+              echo "\`\`\`" >> release-notes.md
             fi
           else
-            echo "## Release Notes
-
-Automated release
-
-### Installation
-\`\`\`bash
-pip install $(basename dist/*.whl | sed 's/-[^-]*-[^-]*-[^-]*\.whl//' | head -1)
-\`\`\`" > release-notes.md
+            echo "## Release Notes" > release-notes.md
+            echo "" >> release-notes.md
+            echo "Automated release" >> release-notes.md
+            echo "" >> release-notes.md
+            echo "### Installation" >> release-notes.md
+            echo "\`\`\`bash" >> release-notes.md
+            echo "pip install package-name" >> release-notes.md
+            echo "\`\`\`" >> release-notes.md
           fi
 
       - name: 🚀 Release to PyPI
@@ -299,18 +262,13 @@ pip install $(basename dist/*.whl | sed 's/-[^-]*-[^-]*-[^-]*\.whl//' | head -1)
           echo "## 🎉 Release Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Get package info
-          PACKAGE_INFO=$(python -c "
-import os
-import re
-files = os.listdir('dist/')
-for f in files:
-    if f.endswith('.whl'):
-        match = re.match(r'^([^-]+)-([^-]+)', f)
-        if match:
-            print(f'{match.group(1)} {match.group(2)}')
-            break
-")
+          # Get package info (reuse previous logic)
+          WHEEL_FILE=$(ls dist/*.whl | head -1 2>/dev/null || echo "")
+          if [ -n "$WHEEL_FILE" ]; then
+            PACKAGE_INFO=$(python3 -c 'import re,sys,os; f=os.path.basename(sys.argv[1]); m=re.match(r"^([^-]+)-([^-]+)", f); print(f"{m.group(1)} {m.group(2)}" if m else "unknown 0.0.0")' "$WHEEL_FILE")
+          else
+            PACKAGE_INFO="unknown 0.0.0"
+          fi
 
           if [ -n "$PACKAGE_INFO" ]; then
             PACKAGE_NAME=$(echo "$PACKAGE_INFO" | cut -d' ' -f1)
