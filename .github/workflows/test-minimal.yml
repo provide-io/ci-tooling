@@ -19,6 +19,7 @@ jobs:
           python-version: '3.11'
           uv-version: '0.7.8'
           install-extras: ''
+          cache-dependencies: false
 
       - name: Verify installation
         shell: bash
