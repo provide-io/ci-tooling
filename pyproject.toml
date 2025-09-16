@@ -7,9 +7,13 @@ name = "ci-tooling"
 version = "0.0.1"
 description = "Shared CI/CD tooling for provide.io projects"
 authors = [{name = "provide.io", email = "engineering@provide.io"}]
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 requires-python = ">=3.11"
 dependencies = []
+
+[tool.setuptools]
+packages = []
+py-modules = []
 
 [project.urls]
 Homepage = "https://github.com/provide-io/ci-tooling"
