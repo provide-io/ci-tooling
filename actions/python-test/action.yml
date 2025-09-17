@@ -83,6 +83,12 @@ runs:
 
         echo "🧪 Running tests in: ${{ inputs.test-directory }}"
 
+        # Set up PYTHONPATH to include source directory for imports
+        if [ -n "${{ inputs.source-directory }}" ] && [ -d "${{ inputs.source-directory }}" ]; then
+          export PYTHONPATH="${{ inputs.source-directory }}:${PYTHONPATH:-}"
+          echo "📁 Added to PYTHONPATH: ${{ inputs.source-directory }}"
+        fi
+
         # Build pytest command
         PYTEST_CMD="pytest ${{ inputs.test-directory }} ${{ inputs.pytest-args }}"
 
