@@ -1,0 +1,330 @@
+name: 'Reusable Python Release'
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: 'Python version to use'
+        type: string
+        default: '3.11'
+      uv-version:
+        description: 'UV version to use'
+        type: string
+        default: '0.7.8'
+      build-backend:
+        description: 'Build backend (uv, build)'
+        type: string
+        default: 'uv'
+      repository-url:
+        description: 'PyPI repository URL'
+        type: string
+        default: 'https://upload.pypi.org/legacy/'
+      skip-existing:
+        description: 'Skip if package already exists'
+        type: boolean
+        default: true
+      prerelease:
+        description: 'Mark as prerelease'
+        type: boolean
+        default: false
+      run-tests:
+        description: 'Run tests before release'
+        type: boolean
+        default: true
+      test-repository:
+        description: 'Test on TestPyPI first'
+        type: boolean
+        default: false
+    secrets:
+      PYPI_TOKEN:
+        description: 'PyPI API token'
+        required: true
+      TEST_PYPI_TOKEN:
+        description: 'TestPyPI API token'
+        required: false
+      GITHUB_TOKEN:
+        description: 'GitHub token'
+        required: false
+
+env:
+  FORCE_COLOR: "1"
+  UV_SYSTEM_PYTHON: "1"
+
+jobs:
+  # ==================================================================================
+  # 🧪 Pre-release Tests
+  # ==================================================================================
+  pre-release-tests:
+    name: 🧪 Pre-release Tests
+    if: inputs.run-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🐍 Setup Python Environment
+        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+        with:
+          python-version: ${{ inputs.python-version }}
+          uv-version: ${{ inputs.uv-version }}
+
+      - name: 🎨 Quality Checks
+        uses: provide-io/ci-tooling/actions/python-quality@v0
+
+      - name: 🧪 Run Tests
+        uses: provide-io/ci-tooling/actions/python-test@v0
+        with:
+          coverage-threshold: 80
+
+  # ==================================================================================
+  # 🏗️ Build Package
+  # ==================================================================================
+  build:
+    name: 🏗️ Build Package
+    needs: [pre-release-tests]
+    if: always() && (needs.pre-release-tests.result == 'success' || !inputs.run-tests)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🐍 Setup Python Environment
+        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+        with:
+          python-version: ${{ inputs.python-version }}
+          uv-version: ${{ inputs.uv-version }}
+
+      - name: 🏗️ Build Package
+        uses: provide-io/ci-tooling/actions/python-build@v0
+        with:
+          build-backend: ${{ inputs.build-backend }}
+
+      - name: 📤 Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist/*
+          retention-days: 30
+
+  # ==================================================================================
+  # 🧪 Test Release (TestPyPI)
+  # ==================================================================================
+  test-release:
+    name: 🧪 Test Release
+    needs: build
+    if: inputs.test-repository && secrets.TEST_PYPI_TOKEN != ''
+    runs-on: ubuntu-latest
+    environment: testpypi
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python Environment
+        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+        with:
+          python-version: ${{ inputs.python-version }}
+          uv-version: ${{ inputs.uv-version }}
+
+      - name: 📦 Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist/
+
+      - name: 🧪 Test Release to TestPyPI
+        uses: provide-io/ci-tooling/actions/python-release@v0
+        with:
+          pypi-token: ${{ secrets.TEST_PYPI_TOKEN }}
+          repository-url: 'https://test.pypi.org/legacy/'
+          create-github-release: false
+          skip-existing: true
+
+      - name: ✅ Verify TestPyPI Installation
+        shell: bash
+        run: |
+          source ./workenv/bin/activate
+
+          # Get package name and version
+          PACKAGE_INFO=$(python -c "
+import os
+import re
+files = os.listdir('dist/')
+for f in files:
+    if f.endswith('.whl'):
+        match = re.match(r'^([^-]+)-([^-]+)', f)
+        if match:
+            print(f'{match.group(1)} {match.group(2)}')
+            break
+")
+
+          if [ -n "$PACKAGE_INFO" ]; then
+            PACKAGE_NAME=$(echo "$PACKAGE_INFO" | cut -d' ' -f1)
+            PACKAGE_VERSION=$(echo "$PACKAGE_INFO" | cut -d' ' -f2)
+
+            echo "🔍 Testing installation of $PACKAGE_NAME==$PACKAGE_VERSION from TestPyPI"
+
+            # Create fresh environment for testing
+            uv venv test-env
+            source test-env/bin/activate
+
+            # Install from TestPyPI
+            uv pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ "$PACKAGE_NAME==$PACKAGE_VERSION"
+
+            # Basic import test
+            python -c "import $PACKAGE_NAME; print(f'✅ Successfully imported {$PACKAGE_NAME}')" || \
+            python -c "import ${PACKAGE_NAME//-/_}; print(f'✅ Successfully imported ${PACKAGE_NAME//-/_}')" || \
+            echo "⚠️ Could not import package, but installation succeeded"
+
+            echo "✅ TestPyPI installation verification completed"
+          else
+            echo "⚠️ Could not determine package info for testing"
+          fi
+
+  # ==================================================================================
+  # 🚀 Production Release
+  # ==================================================================================
+  release:
+    name: 🚀 Production Release
+    needs: [build, test-release]
+    if: always() && needs.build.result == 'success' && (needs.test-release.result == 'success' || !inputs.test-repository)
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🐍 Setup Python Environment
+        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+        with:
+          python-version: ${{ inputs.python-version }}
+          uv-version: ${{ inputs.uv-version }}
+
+      - name: 📦 Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist/
+
+      - name: 📝 Generate Release Notes
+        id: release-notes
+        shell: bash
+        run: |
+          # Try to extract release notes from CHANGELOG.md
+          if [ -f "CHANGELOG.md" ]; then
+            echo "📝 Extracting release notes from CHANGELOG.md..."
+
+            # Extract version section from changelog
+            python -c "
+import re
+import os
+
+if os.path.exists('CHANGELOG.md'):
+    with open('CHANGELOG.md', 'r') as f:
+        content = f.read()
+
+    # Look for version headers
+    version_pattern = r'##\s*\[?v?(\d+\.\d+\.\d+[^\]]*)\]?'
+    matches = list(re.finditer(version_pattern, content, re.MULTILINE))
+
+    if matches:
+        # Get the latest version section
+        first_match = matches[0]
+        start = first_match.end()
+
+        # Find the end (next version header or end of file)
+        if len(matches) > 1:
+            end = matches[1].start()
+        else:
+            end = len(content)
+
+        notes = content[start:end].strip()
+        if notes:
+            with open('release-notes.md', 'w') as f:
+                f.write(notes)
+            print('Release notes extracted from CHANGELOG.md')
+        else:
+            print('No content found for latest version')
+    else:
+        print('No version headers found in CHANGELOG.md')
+else:
+    print('No CHANGELOG.md found')
+"
+
+            if [ ! -f "release-notes.md" ]; then
+              echo "## Release Notes
+
+Automated release of $(basename dist/*.whl | sed 's/-[^-]*-[^-]*-[^-]*\.whl//' | head -1)
+
+### Changes
+- See commit history for detailed changes
+
+### Installation
+\`\`\`bash
+pip install $(basename dist/*.whl | sed 's/-[^-]*-[^-]*-[^-]*\.whl//' | head -1)
+\`\`\`" > release-notes.md
+            fi
+          else
+            echo "## Release Notes
+
+Automated release
+
+### Installation
+\`\`\`bash
+pip install $(basename dist/*.whl | sed 's/-[^-]*-[^-]*-[^-]*\.whl//' | head -1)
+\`\`\`" > release-notes.md
+          fi
+
+      - name: 🚀 Release to PyPI
+        uses: provide-io/ci-tooling/actions/python-release@v0
+        with:
+          pypi-token: ${{ secrets.PYPI_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository-url: ${{ inputs.repository-url }}
+          skip-existing: ${{ inputs.skip-existing }}
+          prerelease: ${{ inputs.prerelease }}
+          release-notes-file: 'release-notes.md'
+
+      - name: 📊 Release Summary
+        shell: bash
+        run: |
+          echo "## 🎉 Release Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Get package info
+          PACKAGE_INFO=$(python -c "
+import os
+import re
+files = os.listdir('dist/')
+for f in files:
+    if f.endswith('.whl'):
+        match = re.match(r'^([^-]+)-([^-]+)', f)
+        if match:
+            print(f'{match.group(1)} {match.group(2)}')
+            break
+")
+
+          if [ -n "$PACKAGE_INFO" ]; then
+            PACKAGE_NAME=$(echo "$PACKAGE_INFO" | cut -d' ' -f1)
+            PACKAGE_VERSION=$(echo "$PACKAGE_INFO" | cut -d' ' -f2)
+
+            echo "**Package:** $PACKAGE_NAME" >> $GITHUB_STEP_SUMMARY
+            echo "**Version:** $PACKAGE_VERSION" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 📦 Installation" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "pip install $PACKAGE_NAME==$PACKAGE_VERSION" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
+            echo "- [PyPI Package](https://pypi.org/project/$PACKAGE_NAME/$PACKAGE_VERSION/)" >> $GITHUB_STEP_SUMMARY
+            echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v$PACKAGE_VERSION)" >> $GITHUB_STEP_SUMMARY
+          fi

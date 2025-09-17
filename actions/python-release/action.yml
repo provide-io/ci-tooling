@@ -1,0 +1,271 @@
+name: 'Python Release'
+description: 'Release Python packages to PyPI and create GitHub releases'
+author: 'provide.io llc'
+
+inputs:
+  pypi-token:
+    description: 'PyPI API token for publishing'
+    required: true
+  github-token:
+    description: 'GitHub token for creating releases'
+    required: false
+    default: ${{ github.token }}
+  repository-url:
+    description: 'PyPI repository URL (for TestPyPI use)'
+    required: false
+    default: 'https://upload.pypi.org/legacy/'
+  skip-existing:
+    description: 'Skip uploading if package already exists'
+    required: false
+    default: 'true'
+  verify-metadata:
+    description: 'Verify package metadata before upload'
+    required: false
+    default: 'true'
+  create-github-release:
+    description: 'Create GitHub release'
+    required: false
+    default: 'true'
+  release-notes:
+    description: 'Release notes content'
+    required: false
+    default: ''
+  release-notes-file:
+    description: 'Path to release notes file'
+    required: false
+    default: ''
+  prerelease:
+    description: 'Mark as prerelease'
+    required: false
+    default: 'false'
+  workenv-path:
+    description: 'Path to workenv directory'
+    required: false
+    default: './workenv'
+  artifacts-path:
+    description: 'Path to build artifacts'
+    required: false
+    default: 'dist/'
+
+outputs:
+  release-version:
+    description: 'Released version'
+    value: ${{ steps.version.outputs.version }}
+  pypi-url:
+    description: 'PyPI package URL'
+    value: ${{ steps.upload.outputs.url }}
+  github-release-url:
+    description: 'GitHub release URL'
+    value: ${{ steps.github-release.outputs.url }}
+  release-result:
+    description: 'Release result (success/failed)'
+    value: ${{ steps.summary.outputs.result }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 📦 Get release version
+      id: version
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        # Extract version from built package
+        if ls "${{ inputs.artifacts-path }}"/*.whl >/dev/null 2>&1; then
+          WHEEL_FILE=$(ls "${{ inputs.artifacts-path }}"/*.whl | head -1)
+          VERSION=$(python -c "
+import re
+import os
+filename = os.path.basename('$WHEEL_FILE')
+match = re.search(r'-([0-9]+\.[0-9]+\.[0-9]+.*?)-', filename)
+if match:
+    print(match.group(1))
+else:
+    print('0.0.0')
+")
+        elif ls "${{ inputs.artifacts-path }}"/*.tar.gz >/dev/null 2>&1; then
+          TARBALL=$(ls "${{ inputs.artifacts-path }}"/*.tar.gz | head -1)
+          VERSION=$(python -c "
+import re
+import os
+filename = os.path.basename('$TARBALL')
+match = re.search(r'-([0-9]+\.[0-9]+\.[0-9]+.*?)\.tar\.gz', filename)
+if match:
+    print(match.group(1))
+else:
+    print('0.0.0')
+")
+        else
+          echo "❌ No packages found in ${{ inputs.artifacts-path }}"
+          exit 1
+        fi
+
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "📦 Release version: $VERSION"
+
+    - name: 🔧 Setup publishing tools
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        echo "🔧 Installing publishing tools..."
+        pip list | grep -q twine || uv pip install twine
+
+    - name: ✅ Verify package metadata
+      if: inputs.verify-metadata == 'true'
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        echo "✅ Verifying package metadata..."
+
+        # Check packages with twine
+        twine check "${{ inputs.artifacts-path }}"/*
+
+        echo "✅ Package metadata verification passed"
+
+    - name: 📤 Upload to PyPI
+      id: upload
+      shell: bash
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ inputs.pypi-token }}
+        TWINE_REPOSITORY_URL: ${{ inputs.repository-url }}
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        echo "📤 Uploading packages to PyPI..."
+
+        UPLOAD_ARGS="--non-interactive"
+        if [ "${{ inputs.skip-existing }}" = "true" ]; then
+          UPLOAD_ARGS="$UPLOAD_ARGS --skip-existing"
+        fi
+
+        # Upload packages
+        if twine upload $UPLOAD_ARGS "${{ inputs.artifacts-path }}"/*; then
+          echo "✅ Successfully uploaded to PyPI"
+
+          # Construct PyPI URL
+          PACKAGE_NAME=$(python -c "
+import os
+import re
+files = os.listdir('${{ inputs.artifacts-path }}')
+for f in files:
+    if f.endswith('.whl') or f.endswith('.tar.gz'):
+        match = re.match(r'^([^-]+)', f)
+        if match:
+            print(match.group(1).replace('_', '-'))
+            break
+")
+          PYPI_URL="https://pypi.org/project/$PACKAGE_NAME/${{ steps.version.outputs.version }}/"
+          echo "url=$PYPI_URL" >> $GITHUB_OUTPUT
+          echo "📦 Package available at: $PYPI_URL"
+        else
+          echo "❌ Failed to upload to PyPI"
+          exit 1
+        fi
+
+    - name: 📝 Prepare release notes
+      id: notes
+      if: inputs.create-github-release == 'true'
+      shell: bash
+      run: |
+        # Prepare release notes
+        NOTES=""
+
+        if [ -n "${{ inputs.release-notes }}" ]; then
+          NOTES="${{ inputs.release-notes }}"
+        elif [ -n "${{ inputs.release-notes-file }}" ] && [ -f "${{ inputs.release-notes-file }}" ]; then
+          NOTES=$(cat "${{ inputs.release-notes-file }}")
+        else
+          # Generate basic release notes
+          NOTES="## Release ${{ steps.version.outputs.version }}
+
+### Package Information
+- **Version:** ${{ steps.version.outputs.version }}
+- **PyPI:** ${{ steps.upload.outputs.url }}
+
+### Artifacts
+"
+          # List artifacts
+          for file in "${{ inputs.artifacts-path }}"/*; do
+            if [ -f "$file" ]; then
+              NOTES="${NOTES}
+- $(basename "$file")"
+            fi
+          done
+        fi
+
+        # Save notes to file for GitHub CLI
+        echo "$NOTES" > release-notes.md
+        echo "Release notes prepared"
+
+    - name: 🏷️ Create GitHub Release
+      id: github-release
+      if: inputs.create-github-release == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        echo "🏷️ Creating GitHub release..."
+
+        VERSION="${{ steps.version.outputs.version }}"
+        TAG="v$VERSION"
+
+        RELEASE_ARGS="--title \"Release $VERSION\" --notes-file release-notes.md"
+
+        if [ "${{ inputs.prerelease }}" = "true" ]; then
+          RELEASE_ARGS="$RELEASE_ARGS --prerelease"
+        fi
+
+        # Create release with artifacts
+        if gh release create "$TAG" "${{ inputs.artifacts-path }}"/* $RELEASE_ARGS; then
+          RELEASE_URL=$(gh release view "$TAG" --json url --jq '.url')
+          echo "url=$RELEASE_URL" >> $GITHUB_OUTPUT
+          echo "✅ GitHub release created: $RELEASE_URL"
+        else
+          echo "❌ Failed to create GitHub release"
+          exit 1
+        fi
+
+    - name: 📊 Release Summary
+      id: summary
+      shell: bash
+      run: |
+        echo "result=success" >> $GITHUB_OUTPUT
+
+        echo "## 🚀 Release Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        VERSION="${{ steps.version.outputs.version }}"
+        echo "**Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        echo "### 📦 PyPI Release" >> $GITHUB_STEP_SUMMARY
+        if [ -n "${{ steps.upload.outputs.url }}" ]; then
+          echo "✅ **Published to PyPI:** [${{ steps.upload.outputs.url }}](${{ steps.upload.outputs.url }})" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **PyPI upload failed**" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [ "${{ inputs.create-github-release }}" = "true" ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🏷️ GitHub Release" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ steps.github-release.outputs.url }}" ]; then
+            echo "✅ **GitHub release created:** [${{ steps.github-release.outputs.url }}](${{ steps.github-release.outputs.url }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **GitHub release creation failed**" >> $GITHUB_STEP_SUMMARY
+          fi
+        fi
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📋 Released Artifacts" >> $GITHUB_STEP_SUMMARY
+        for file in "${{ inputs.artifacts-path }}"/*; do
+          if [ -f "$file" ]; then
+            echo "- $(basename "$file")" >> $GITHUB_STEP_SUMMARY
+          fi
+        done
+
+branding:
+  icon: 'upload'
+  color: 'yellow'
