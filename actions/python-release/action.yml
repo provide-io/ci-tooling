@@ -73,28 +73,10 @@ runs:
         # Extract version from built package
         if ls "${{ inputs.artifacts-path }}"/*.whl >/dev/null 2>&1; then
           WHEEL_FILE=$(ls "${{ inputs.artifacts-path }}"/*.whl | head -1)
-          VERSION=$(python -c "
-import re
-import os
-filename = os.path.basename('$WHEEL_FILE')
-match = re.search(r'-([0-9]+\.[0-9]+\.[0-9]+.*?)-', filename)
-if match:
-    print(match.group(1))
-else:
-    print('0.0.0')
-")
+          VERSION=$(python3 -c 'import re, os, sys; f=os.path.basename(sys.argv[1]); m=re.search(r"-([0-9]+\.[0-9]+\.[0-9]+.*?)-", f); print(m.group(1) if m else "0.0.0")' "$WHEEL_FILE")
         elif ls "${{ inputs.artifacts-path }}"/*.tar.gz >/dev/null 2>&1; then
           TARBALL=$(ls "${{ inputs.artifacts-path }}"/*.tar.gz | head -1)
-          VERSION=$(python -c "
-import re
-import os
-filename = os.path.basename('$TARBALL')
-match = re.search(r'-([0-9]+\.[0-9]+\.[0-9]+.*?)\.tar\.gz', filename)
-if match:
-    print(match.group(1))
-else:
-    print('0.0.0')
-")
+          VERSION=$(python3 -c 'import re, os, sys; f=os.path.basename(sys.argv[1]); m=re.search(r"-([0-9]+\.[0-9]+\.[0-9]+.*?)\.tar\.gz", f); print(m.group(1) if m else "0.0.0")' "$TARBALL")
         else
           echo "❌ No packages found in ${{ inputs.artifacts-path }}"
           exit 1
@@ -146,17 +128,7 @@ else:
           echo "✅ Successfully uploaded to PyPI"
 
           # Construct PyPI URL
-          PACKAGE_NAME=$(python -c "
-import os
-import re
-files = os.listdir('${{ inputs.artifacts-path }}')
-for f in files:
-    if f.endswith('.whl') or f.endswith('.tar.gz'):
-        match = re.match(r'^([^-]+)', f)
-        if match:
-            print(match.group(1).replace('_', '-'))
-            break
-")
+          PACKAGE_NAME=$(python3 -c 'import os,re; files=os.listdir("${{ inputs.artifacts-path }}"); [print(re.match(r"^([^-]+)", f).group(1).replace("_", "-")) for f in files if (f.endswith(".whl") or f.endswith(".tar.gz")) and re.match(r"^([^-]+)", f)][:1]' || echo "unknown")
           PYPI_URL="https://pypi.org/project/$PACKAGE_NAME/${{ steps.version.outputs.version }}/"
           echo "url=$PYPI_URL" >> $GITHUB_OUTPUT
           echo "📦 Package available at: $PYPI_URL"
@@ -179,19 +151,15 @@ for f in files:
           NOTES=$(cat "${{ inputs.release-notes-file }}")
         else
           # Generate basic release notes
-          NOTES="## Release ${{ steps.version.outputs.version }}
-
-### Package Information
-- **Version:** ${{ steps.version.outputs.version }}
-- **PyPI:** ${{ steps.upload.outputs.url }}
-
-### Artifacts
-"
+          NOTES="## Release ${{ steps.version.outputs.version }}"
+          NOTES="${NOTES}\n\n### Package Information"
+          NOTES="${NOTES}\n- Version: ${{ steps.version.outputs.version }}"
+          NOTES="${NOTES}\n- PyPI: ${{ steps.upload.outputs.url }}"
+          NOTES="${NOTES}\n\n### Artifacts"
           # List artifacts
           for file in "${{ inputs.artifacts-path }}"/*; do
             if [ -f "$file" ]; then
-              NOTES="${NOTES}
-- $(basename "$file")"
+              NOTES="${NOTES}\n- $(basename "$file")"
             fi
           done
         fi

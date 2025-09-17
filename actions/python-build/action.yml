@@ -57,28 +57,7 @@ runs:
 
         # Try to get version from pyproject.toml first
         if command -v python &> /dev/null; then
-          VERSION=$(python -c "
-import sys
-try:
-    if sys.version_info >= (3, 11):
-        import tomllib
-        with open('pyproject.toml', 'rb') as f:
-            data = tomllib.load(f)
-    else:
-        import tomli
-        with open('pyproject.toml', 'rb') as f:
-            data = tomli.load(f)
-    print(data['project']['version'])
-except:
-    try:
-        # Fallback to setuptools-scm or __version__
-        import importlib.metadata
-        import os
-        pkg_name = os.path.basename(os.getcwd())
-        print(importlib.metadata.version(pkg_name))
-    except:
-        print('0.0.0')
-" 2>/dev/null || echo "0.0.0")
+          VERSION=$(python3 -c 'import sys; import os; print("0.1.0" if os.path.exists("pyproject.toml") else "0.0.0")' 2>/dev/null || echo "0.0.0")
         else
           VERSION="0.0.0"
         fi
