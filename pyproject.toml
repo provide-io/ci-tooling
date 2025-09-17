@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ci-tooling"
+version = "0.0.1"
+description = "Shared CI/CD tooling for provide.io projects"
+authors = [{name = "provide.io", email = "code@provide.io"}]
+license = "Apache-2.0"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.setuptools]
+packages = []
+py-modules = []
+
+[project.urls]
+Homepage = "https://github.com/provide-io/ci-tooling"
+Repository = "https://github.com/provide-io/ci-tooling"
+
+[tool.pytest.ini_options]
+testpaths = ["examples"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
