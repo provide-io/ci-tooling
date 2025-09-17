@@ -1,0 +1,17 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    uses: provide-io/ci-tooling/workflows/python-release.yml@v0
+    with:
+      python-version: '3.11'
+      run-tests: true
+      test-repository: false
+    secrets:
+      PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

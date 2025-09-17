@@ -1,0 +1,157 @@
+name: 'Python Code Quality'
+description: 'Run linting, formatting, and type checking for Python code'
+author: 'provide.io llc'
+
+inputs:
+  source-paths:
+    description: 'Paths to check (space-separated)'
+    required: false
+    default: 'src/ tests/'
+  ruff-args:
+    description: 'Additional arguments for ruff check'
+    required: false
+    default: ''
+  ruff-format-check:
+    description: 'Check formatting with ruff format'
+    required: false
+    default: 'true'
+  mypy-enabled:
+    description: 'Run mypy type checking'
+    required: false
+    default: 'true'
+  mypy-args:
+    description: 'Additional arguments for mypy'
+    required: false
+    default: ''
+  fail-on-error:
+    description: 'Fail the action on quality issues'
+    required: false
+    default: 'true'
+  config-file:
+    description: 'Path to custom configuration file'
+    required: false
+    default: ''
+  workenv-path:
+    description: 'Path to workenv directory'
+    required: false
+    default: './workenv'
+
+outputs:
+  ruff-violations:
+    description: 'Number of ruff violations found'
+    value: ${{ steps.ruff.outputs.violations }}
+  mypy-errors:
+    description: 'Number of mypy errors found'
+    value: ${{ steps.mypy.outputs.errors }}
+  quality-passed:
+    description: 'Whether all quality checks passed'
+    value: ${{ steps.summary.outputs.passed }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🎨 Run Ruff Linting
+      id: ruff
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        echo "🔍 Running ruff check on: ${{ inputs.source-paths }}"
+
+        # Run ruff check with GitHub output format
+        VIOLATIONS=0
+        if ! ruff check ${{ inputs.source-paths }} ${{ inputs.ruff-args }} --output-format=github; then
+          VIOLATIONS=$(ruff check ${{ inputs.source-paths }} ${{ inputs.ruff-args }} --statistics | tail -1 | awk '{print $1}' || echo "0")
+        fi
+
+        echo "violations=$VIOLATIONS" >> $GITHUB_OUTPUT
+        echo "📊 Found $VIOLATIONS ruff violations" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ inputs.fail-on-error }}" = "true" ] && [ "$VIOLATIONS" -gt 0 ]; then
+          echo "❌ Ruff found $VIOLATIONS violations"
+          exit 1
+        fi
+
+    - name: 🎨 Check Ruff Formatting
+      if: inputs.ruff-format-check == 'true'
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        echo "🔍 Checking formatting with ruff format"
+
+        if ! ruff format --check ${{ inputs.source-paths }}; then
+          echo "❌ Code formatting issues found"
+          if [ "${{ inputs.fail-on-error }}" = "true" ]; then
+            echo "💡 Run 'ruff format ${{ inputs.source-paths }}' to fix formatting"
+            exit 1
+          fi
+        else
+          echo "✅ Code formatting is correct"
+        fi
+
+    - name: 🔍 Run MyPy Type Checking
+      id: mypy
+      if: inputs.mypy-enabled == 'true'
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        # Check if mypy is installed
+        if ! command -v mypy &> /dev/null; then
+          echo "⚠️ MyPy not found, installing..."
+          uv pip install mypy
+        fi
+
+        echo "🔍 Running mypy on: ${{ inputs.source-paths }}"
+
+        ERRORS=0
+        MYPY_PATHS="${{ inputs.source-paths }}"
+        if [ -n "${{ inputs.mypy-args }}" ]; then
+          MYPY_PATHS="${{ inputs.mypy-args }}"
+        fi
+
+        # Run mypy and capture errors
+        if ! mypy $MYPY_PATHS; then
+          ERRORS=$(mypy $MYPY_PATHS --tb=no 2>&1 | grep -c "error:" || echo "0")
+        fi
+
+        echo "errors=$ERRORS" >> $GITHUB_OUTPUT
+        echo "📊 Found $ERRORS mypy errors" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ inputs.fail-on-error }}" = "true" ] && [ "$ERRORS" -gt 0 ]; then
+          echo "❌ MyPy found $ERRORS type errors"
+          exit 1
+        fi
+
+    - name: 📊 Quality Summary
+      id: summary
+      shell: bash
+      run: |
+        RUFF_VIOLATIONS="${{ steps.ruff.outputs.violations || 0 }}"
+        MYPY_ERRORS="${{ steps.mypy.outputs.errors || 0 }}"
+
+        echo "## 🎨 Code Quality Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Tool | Result | Count |" >> $GITHUB_STEP_SUMMARY
+        echo "|------|--------|-------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Ruff Linting | $([ "$RUFF_VIOLATIONS" -eq 0 ] && echo "✅ Pass" || echo "❌ Fail") | $RUFF_VIOLATIONS violations |" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ inputs.mypy-enabled }}" = "true" ]; then
+          echo "| MyPy Type Check | $([ "$MYPY_ERRORS" -eq 0 ] && echo "✅ Pass" || echo "❌ Fail") | $MYPY_ERRORS errors |" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        TOTAL_ISSUES=$((RUFF_VIOLATIONS + MYPY_ERRORS))
+        if [ "$TOTAL_ISSUES" -eq 0 ]; then
+          echo "passed=true" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎉 **All quality checks passed!**" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "passed=false" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Quality issues found:** $TOTAL_ISSUES total" >> $GITHUB_STEP_SUMMARY
+        fi
+
+branding:
+  icon: 'check-circle'
+  color: 'green'
