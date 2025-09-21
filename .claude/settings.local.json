@@ -10,7 +10,11 @@
       "Bash(gh run view:*)",
       "Bash(gh run list:*)",
       "Bash(gh auth:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh api:*)",
+      "Bash(gh workflow run:*)",
+      "Bash(printenv)"
     ],
     "additionalDirectories": [
       "/Users/tim/code/gh/provide-io"
