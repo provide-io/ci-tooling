@@ -9,7 +9,8 @@
       "Bash(cd:*)",
       "Bash(gh run view:*)",
       "Bash(gh run list:*)",
-      "Bash(gh auth:*)"
+      "Bash(gh auth:*)",
+      "Bash(awk:*)"
     ],
     "additionalDirectories": [
       "/Users/tim/code/gh/provide-io"
