@@ -60,9 +60,8 @@ runs:
 
         # Run ruff check with GitHub output format
         VIOLATIONS=0
-        if ! ruff check ${{ inputs.source-paths }} ${{ inputs.ruff-args }} --output-format=github || true; then
-          VIOLATIONS=$(ruff check ${{ inputs.source-paths }} ${{ inputs.ruff-args }} --statistics | tail -1 | awk '{print $1}' || echo "0")
-        fi
+        ruff check ${{ inputs.source-paths }} ${{ inputs.ruff-args }} --output-format=github || true
+        VIOLATIONS=$(ruff check ${{ inputs.source-paths }} ${{ inputs.ruff-args }} --statistics | tail -1 | awk '{print $1}' || echo "0")
 
         echo "violations=$VIOLATIONS" >> $GITHUB_OUTPUT
         echo "📊 Found $VIOLATIONS ruff violations" >> $GITHUB_STEP_SUMMARY
@@ -79,13 +78,13 @@ runs:
 
         echo "🔍 Checking formatting with ruff format"
 
-        if ! ruff format --check ${{ inputs.source-paths }} || true; then
+        if ruff format --check ${{ inputs.source-paths }} || true; then
+          echo "✅ Code formatting is correct"
+        else
           echo "❌ Code formatting issues found (non-blocking)"
           if [ "${{ inputs.fail-on-error }}" = "true" ]; then
             echo "💡 Run 'ruff format ${{ inputs.source-paths }}' to fix formatting"
           fi
-        else
-          echo "✅ Code formatting is correct"
         fi
 
     - name: 🔍 Run MyPy Type Checking
@@ -110,9 +109,8 @@ runs:
         fi
 
         # Run mypy and capture errors
-        if ! mypy $MYPY_PATHS || true; then
-          ERRORS=$(mypy $MYPY_PATHS --tb=no 2>&1 | grep -c "error:" || echo "0")
-        fi
+        mypy $MYPY_PATHS || true
+        ERRORS=$(mypy $MYPY_PATHS --tb=no 2>&1 | grep -c "error:" || echo "0")
 
         echo "errors=$ERRORS" >> $GITHUB_OUTPUT
         echo "📊 Found $ERRORS mypy errors" >> $GITHUB_STEP_SUMMARY
