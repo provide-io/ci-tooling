@@ -14,7 +14,8 @@
       "Bash(gh repo view:*)",
       "Bash(gh api:*)",
       "Bash(gh workflow run:*)",
-      "Bash(printenv)"
+      "Bash(printenv)",
+      "Bash(gh run download:*)"
     ],
     "additionalDirectories": [
       "/Users/tim/code/gh/provide-io"
