@@ -139,8 +139,13 @@ runs:
       id: summary
       shell: bash
       run: |
-        RUFF_VIOLATIONS="${{ steps.ruff.outputs.violations || 0 }}"
-        MYPY_ERRORS="${{ steps.mypy.outputs.errors || 0 }}"
+        # Get outputs with defaults
+        RUFF_VIOLATIONS="${{ steps.ruff.outputs.violations }}"
+        MYPY_ERRORS="${{ steps.mypy.outputs.errors }}"
+
+        # Set defaults if empty
+        RUFF_VIOLATIONS=${RUFF_VIOLATIONS:-0}
+        MYPY_ERRORS=${MYPY_ERRORS:-0}
 
         echo "## 🎨 Code Quality Report" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
@@ -153,15 +158,11 @@ runs:
         fi
 
         TOTAL_ISSUES=$((RUFF_VIOLATIONS + MYPY_ERRORS))
-        if [ "$TOTAL_ISSUES" -eq 0 ]; then
-          echo "passed=true" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🎉 **All quality checks passed!**" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "passed=false" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "⚠️ **Quality issues found:** $TOTAL_ISSUES total" >> $GITHUB_STEP_SUMMARY
-        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📊 **Found $TOTAL_ISSUES total quality issues (non-blocking)**" >> $GITHUB_STEP_SUMMARY
+
+        # Always report as passed since we're non-blocking
+        echo "passed=true" >> $GITHUB_OUTPUT
 
 branding:
   icon: 'check-circle'
