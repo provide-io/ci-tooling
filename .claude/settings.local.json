@@ -15,7 +15,9 @@
       "Bash(gh api:*)",
       "Bash(gh workflow run:*)",
       "Bash(printenv)",
-      "Bash(gh run download:*)"
+      "Bash(gh run download:*)",
+      "Read(//private/tmp/artifacts/**)",
+      "WebSearch"
     ],
     "additionalDirectories": [
       "/Users/tim/code/gh/provide-io"
