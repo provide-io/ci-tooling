@@ -1,0 +1,240 @@
+name: 'Python Build & Release'
+description: 'Build Python packages and conditionally deploy to TestPyPI and/or PyPI with toggleable options'
+author: 'provide.io llc'
+
+inputs:
+  # Build options
+  build-backend:
+    description: 'Build backend to use (uv, build, setuptools)'
+    required: false
+    default: 'uv'
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.11'
+  install-extras:
+    description: 'Extra dependencies to install (e.g., dev)'
+    required: false
+    default: 'dev'
+  workenv-path:
+    description: 'Path to workenv directory'
+    required: false
+    default: './workenv'
+
+  # Deployment toggles
+  deploy-testpypi:
+    description: 'Deploy to TestPyPI'
+    required: false
+    default: 'false'
+  deploy-pypi:
+    description: 'Deploy to PyPI'
+    required: false
+    default: 'false'
+
+  # Deployment options
+  skip-existing:
+    description: 'Skip uploading if package already exists'
+    required: false
+    default: 'true'
+  verify-metadata:
+    description: 'Verify package metadata before upload'
+    required: false
+    default: 'true'
+
+  # Authentication (for legacy token-based auth)
+  testpypi-token:
+    description: 'TestPyPI API token (optional - will use trusted publishing if not provided)'
+    required: false
+    default: ''
+  pypi-token:
+    description: 'PyPI API token (optional - will use trusted publishing if not provided)'
+    required: false
+    default: ''
+
+  # Dry run and validation
+  dry-run:
+    description: 'Dry run mode - build and validate without deploying'
+    required: false
+    default: 'false'
+
+outputs:
+  build-result:
+    description: 'Build result (success/failed)'
+    value: ${{ steps.build.outputs.result }}
+  package-version:
+    description: 'Package version'
+    value: ${{ steps.build.outputs.package-version }}
+  wheel-file:
+    description: 'Path to wheel file'
+    value: ${{ steps.build.outputs.wheel-file }}
+  sdist-file:
+    description: 'Path to source distribution file'
+    value: ${{ steps.build.outputs.sdist-file }}
+  testpypi-url:
+    description: 'TestPyPI package URL (if deployed)'
+    value: ${{ steps.testpypi-deploy.outputs.url }}
+  pypi-url:
+    description: 'PyPI package URL (if deployed)'
+    value: ${{ steps.pypi-deploy.outputs.url }}
+  deployment-summary:
+    description: 'Summary of deployments performed'
+    value: ${{ steps.summary.outputs.deployments }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🐍 Setup Python Environment
+      uses: provide-io/ci-tooling/actions/setup-python-env@main
+      with:
+        python-version: ${{ inputs.python-version }}
+        install-extras: ${{ inputs.install-extras }}
+        workenv-path: ${{ inputs.workenv-path }}
+
+    - name: 📦 Build Package
+      id: build
+      uses: provide-io/ci-tooling/actions/python-build@main
+      with:
+        build-backend: ${{ inputs.build-backend }}
+        workenv-path: ${{ inputs.workenv-path }}
+        check-build: ${{ inputs.verify-metadata }}
+
+    - name: 🧪 Dry Run Validation
+      if: inputs.dry-run == 'true'
+      shell: bash
+      run: |
+        echo "🧪 DRY RUN MODE - No deployments will be performed"
+        echo ""
+        echo "📦 Build Results:"
+        echo "  - Version: ${{ steps.build.outputs.package-version }}"
+        echo "  - Wheel: ${{ steps.build.outputs.wheel-file }}"
+        echo "  - Source: ${{ steps.build.outputs.sdist-file }}"
+        echo ""
+        echo "🎯 Deployment Configuration:"
+        echo "  - Deploy to TestPyPI: ${{ inputs.deploy-testpypi }}"
+        echo "  - Deploy to PyPI: ${{ inputs.deploy-pypi }}"
+        echo ""
+        if [ "${{ inputs.deploy-testpypi }}" = "true" ]; then
+          echo "✅ Would deploy to TestPyPI (https://test.pypi.org/project/PACKAGE)"
+        fi
+        if [ "${{ inputs.deploy-pypi }}" = "true" ]; then
+          echo "✅ Would deploy to PyPI (https://pypi.org/project/PACKAGE)"
+        fi
+        if [ "${{ inputs.deploy-testpypi }}" = "false" ] && [ "${{ inputs.deploy-pypi }}" = "false" ]; then
+          echo "ℹ️ No deployments configured"
+        fi
+
+    - name: 🧪 Deploy to TestPyPI
+      id: testpypi-deploy
+      if: inputs.deploy-testpypi == 'true' && inputs.dry-run != 'true'
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        password: ${{ inputs.testpypi-token }}
+        packages-dir: dist/
+        skip-existing: ${{ inputs.skip-existing }}
+        verify-metadata: ${{ inputs.verify-metadata }}
+
+    - name: 🚀 Deploy to PyPI
+      id: pypi-deploy
+      if: inputs.deploy-pypi == 'true' && inputs.dry-run != 'true'
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ inputs.pypi-token }}
+        packages-dir: dist/
+        skip-existing: ${{ inputs.skip-existing }}
+        verify-metadata: ${{ inputs.verify-metadata }}
+
+    - name: 🔗 Set Package URLs
+      id: urls
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        # Extract package name from build artifacts
+        PACKAGE_NAME=""
+        if [ -n "${{ steps.build.outputs.wheel-file }}" ]; then
+          # Extract from wheel filename: package-version-py3-none-any.whl
+          WHEEL_BASENAME=$(basename "${{ steps.build.outputs.wheel-file }}")
+          PACKAGE_NAME=$(echo "$WHEEL_BASENAME" | sed 's/-[^-]*-py.*\.whl$//')
+        elif [ -n "${{ steps.build.outputs.sdist-file }}" ]; then
+          # Extract from sdist filename: package-version.tar.gz
+          SDIST_BASENAME=$(basename "${{ steps.build.outputs.sdist-file }}")
+          PACKAGE_NAME=$(echo "$SDIST_BASENAME" | sed 's/-[^-]*\.tar\.gz$//')
+        fi
+
+        VERSION="${{ steps.build.outputs.package-version }}"
+
+        if [ "${{ inputs.deploy-testpypi }}" = "true" ] && [ "${{ inputs.dry-run }}" != "true" ]; then
+          TESTPYPI_URL="https://test.pypi.org/project/${PACKAGE_NAME}/${VERSION}/"
+          echo "testpypi-url=$TESTPYPI_URL" >> $GITHUB_OUTPUT
+        fi
+
+        if [ "${{ inputs.deploy-pypi }}" = "true" ] && [ "${{ inputs.dry-run }}" != "true" ]; then
+          PYPI_URL="https://pypi.org/project/${PACKAGE_NAME}/${VERSION}/"
+          echo "pypi-url=$PYPI_URL" >> $GITHUB_OUTPUT
+        fi
+
+    - name: 📊 Deployment Summary
+      id: summary
+      shell: bash
+      run: |
+        echo "## 📦 Build & Release Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        VERSION="${{ steps.build.outputs.package-version }}"
+        echo "**Package Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "**Build Result:** ${{ steps.build.outputs.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ inputs.dry-run }}" = "true" ]; then
+          echo "**Mode:** 🧪 Dry Run (no deployments performed)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Deployment Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- TestPyPI: ${{ inputs.deploy-testpypi }}" >> $GITHUB_STEP_SUMMARY
+          echo "- PyPI: ${{ inputs.deploy-pypi }}" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "### 🚀 Deployments Performed" >> $GITHUB_STEP_SUMMARY
+          DEPLOYMENTS=""
+
+          if [ "${{ inputs.deploy-testpypi }}" = "true" ]; then
+            echo "- ✅ **TestPyPI:** [View Package](${{ steps.urls.outputs.testpypi-url }})" >> $GITHUB_STEP_SUMMARY
+            DEPLOYMENTS="testpypi"
+          fi
+
+          if [ "${{ inputs.deploy-pypi }}" = "true" ]; then
+            echo "- ✅ **PyPI:** [View Package](${{ steps.urls.outputs.pypi-url }})" >> $GITHUB_STEP_SUMMARY
+            if [ -n "$DEPLOYMENTS" ]; then
+              DEPLOYMENTS="$DEPLOYMENTS,pypi"
+            else
+              DEPLOYMENTS="pypi"
+            fi
+          fi
+
+          if [ -z "$DEPLOYMENTS" ]; then
+            echo "- ℹ️ No deployments configured" >> $GITHUB_STEP_SUMMARY
+            DEPLOYMENTS="none"
+          fi
+
+          echo "deployments=$DEPLOYMENTS" >> $GITHUB_OUTPUT
+        fi
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📋 Build Artifacts" >> $GITHUB_STEP_SUMMARY
+        if [ -n "${{ steps.build.outputs.wheel-file }}" ]; then
+          echo "- 🎯 **Wheel:** $(basename "${{ steps.build.outputs.wheel-file }}")" >> $GITHUB_STEP_SUMMARY
+        fi
+        if [ -n "${{ steps.build.outputs.sdist-file }}" ]; then
+          echo "- 📦 **Source:** $(basename "${{ steps.build.outputs.sdist-file }}")" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [ "${{ inputs.dry-run }}" = "true" ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ▶️ Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "To perform actual deployments, run again with:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`dry-run: false\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Choose deployment targets with \`deploy-testpypi\` and/or \`deploy-pypi\`" >> $GITHUB_STEP_SUMMARY
+        fi
+
+branding:
+  icon: 'package'
+  color: 'blue'
