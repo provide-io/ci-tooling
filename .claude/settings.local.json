@@ -8,7 +8,8 @@
       "Bash(gh workflow list:*)",
       "Bash(cd:*)",
       "Bash(gh run view:*)",
-      "Bash(gh run list:*)"
+      "Bash(gh run list:*)",
+      "Bash(gh auth:*)"
     ],
     "additionalDirectories": [
       "/Users/tim/code/gh/provide-io"
