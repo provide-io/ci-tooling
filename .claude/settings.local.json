@@ -17,7 +17,8 @@
       "Bash(printenv)",
       "Bash(gh run download:*)",
       "Read(//private/tmp/artifacts/**)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(gh secret:*)"
     ],
     "additionalDirectories": [
       "/Users/tim/code/gh/provide-io"
