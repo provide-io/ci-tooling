@@ -2,6 +2,12 @@
   "permissions": {
     "additionalDirectories": [
       "/Users/tim/code/gh/provide-io"
+    ],
+    "allow": [
+      "Bash(if [ -d \"/Users/tim/code/gh/provide-io/$repo/.github/workflows\" ])",
+      "Bash(then echo \"Has workflows:\")",
+      "Bash(else echo \"No workflows directory\")",
+      "Bash(fi)"
     ]
   }
 }
