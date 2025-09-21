@@ -5,7 +5,9 @@
       "Bash(then echo \"Has workflows:\")",
       "Bash(else echo \"No workflows directory\")",
       "Bash(fi)",
-      "Bash(gh workflow list:*)"
+      "Bash(gh workflow list:*)",
+      "Bash(cd:*)",
+      "Bash(gh run view:*)"
     ],
     "additionalDirectories": [
       "/Users/tim/code/gh/provide-io"
