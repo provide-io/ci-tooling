@@ -20,7 +20,8 @@
       "WebSearch",
       "Bash(gh secret:*)",
       "WebFetch(domain:peps.python.org)",
-      "Bash(od:*)"
+      "Bash(od:*)",
+      "Read(//private/tmp/**)"
     ],
     "additionalDirectories": [
       "/Users/tim/code/gh/provide-io"
