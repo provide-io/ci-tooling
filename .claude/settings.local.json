@@ -19,7 +19,8 @@
       "Read(//private/tmp/artifacts/**)",
       "WebSearch",
       "Bash(gh secret:*)",
-      "WebFetch(domain:peps.python.org)"
+      "WebFetch(domain:peps.python.org)",
+      "Bash(od:*)"
     ],
     "additionalDirectories": [
       "/Users/tim/code/gh/provide-io"
