@@ -1,0 +1,90 @@
+name: 'Generate TestPyPI Version'
+description: 'Generate smart versions for TestPyPI deployment - base version if new, post-release if exists'
+author: 'provide.io llc'
+
+inputs:
+  package-name:
+    description: 'Name of the package on TestPyPI'
+    required: true
+  version-file:
+    description: 'Path to the version file'
+    required: false
+    default: 'VERSION'
+  update-file:
+    description: 'Whether to update the version file with the deploy version'
+    required: false
+    default: 'true'
+  timestamp-format:
+    description: 'Format for the timestamp (default: %Y%m%d%H%M%S)'
+    required: false
+    default: '%Y%m%d%H%M%S'
+
+outputs:
+  base-version:
+    description: 'The original base version from the file'
+    value: ${{ steps.generate.outputs.base-version }}
+  deploy-version:
+    description: 'The version to deploy (base or post-release)'
+    value: ${{ steps.generate.outputs.deploy-version }}
+  timestamp:
+    description: 'The timestamp used for the post version (if applicable)'
+    value: ${{ steps.generate.outputs.timestamp }}
+  is-post-release:
+    description: 'Whether a post-release version was generated (true/false)'
+    value: ${{ steps.generate.outputs.is-post-release }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🔖 Generate TestPyPI Version
+      id: generate
+      shell: bash
+      run: |
+        # Read base version from file
+        if [ ! -f "${{ inputs.version-file }}" ]; then
+          echo "❌ Version file not found: ${{ inputs.version-file }}"
+          exit 1
+        fi
+
+        BASE_VERSION=$(cat "${{ inputs.version-file }}")
+        PACKAGE_NAME="${{ inputs.package-name }}"
+
+        echo "📦 Base version: $BASE_VERSION"
+        echo "📋 Package name: $PACKAGE_NAME"
+
+        # Check if version exists on TestPyPI
+        echo "🔍 Checking if $BASE_VERSION exists on TestPyPI..."
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+          "https://test.pypi.org/pypi/${PACKAGE_NAME}/${BASE_VERSION}/json" || echo "000")
+
+        if [ "$HTTP_CODE" = "404" ]; then
+          # Version doesn't exist, use base version
+          DEPLOY_VERSION="$BASE_VERSION"
+          IS_POST_RELEASE="false"
+          TIMESTAMP="none"
+          echo "✅ Version $BASE_VERSION not found on TestPyPI - using base version"
+        else
+          # Version exists, create post-release
+          TIMESTAMP=$(date +"${{ inputs.timestamp-format }}")
+          DEPLOY_VERSION="${BASE_VERSION}.post${TIMESTAMP}"
+          IS_POST_RELEASE="true"
+          echo "🔄 Version $BASE_VERSION exists on TestPyPI - using post-release: $DEPLOY_VERSION"
+        fi
+
+        echo "🚀 Deploy version: $DEPLOY_VERSION"
+
+        # Update version file if requested
+        if [ "${{ inputs.update-file }}" = "true" ]; then
+          echo "📝 Updating ${{ inputs.version-file }} with deploy version"
+          echo "${DEPLOY_VERSION}" > "${{ inputs.version-file }}"
+        fi
+
+        # Set outputs
+        echo "base-version=${BASE_VERSION}" >> $GITHUB_OUTPUT
+        echo "deploy-version=${DEPLOY_VERSION}" >> $GITHUB_OUTPUT
+        echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+        echo "is-post-release=${IS_POST_RELEASE}" >> $GITHUB_OUTPUT
+
+branding:
+  icon: 'package'
+  color: 'orange'
