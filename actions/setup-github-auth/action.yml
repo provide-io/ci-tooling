@@ -49,7 +49,7 @@ runs:
         echo "🔧 Parsing and configuring GitHub authentication..."
 
         # Create temporary Python script
-        cat > /tmp/setup_auth.py << 'PYTHON_SCRIPT'
+        cat > /tmp/setup_auth.py << 'EOF'
 import json
 import subprocess
 import sys
@@ -99,7 +99,7 @@ print(f'✅ Successfully configured {len(configured_orgs)} organizations')
 with open('/tmp/auth_outputs', 'w') as f:
     f.write(f'COUNT={len(configured_orgs)}\n')
     f.write(f'ORGS={",".join(configured_orgs)}\n')
-PYTHON_SCRIPT
+EOF
 
         # Run the Python script
         echo "$HELPERS_JSON" | LOG_LEVEL="${{ inputs.log-level }}" python3 /tmp/setup_auth.py
