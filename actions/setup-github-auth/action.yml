@@ -23,7 +23,8 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: 🔐 Configure GitHub Authentication
+    - name: 🔐 Parse and Configure GitHub Authentication
+      id: setup
       shell: bash
       run: |
         # Get the environment variable value
@@ -32,52 +33,81 @@ runs:
 
         if [ -z "$HELPERS_JSON" ]; then
           echo "ℹ️ No $HELPERS_VAR_NAME found - using public access only"
+          echo "helpers-count=0" >> $GITHUB_OUTPUT
+          echo "configured-orgs=" >> $GITHUB_OUTPUT
           exit 0
         fi
 
         # Validate JSON format
         if ! echo "$HELPERS_JSON" | python3 -m json.tool >/dev/null 2>&1; then
           echo "❌ Invalid JSON format in $HELPERS_VAR_NAME"
+          echo "helpers-count=0" >> $GITHUB_OUTPUT
+          echo "configured-orgs=" >> $GITHUB_OUTPUT
           exit 1
         fi
 
-        echo "🔧 Configuring GitHub authentication..."
+        echo "🔧 Parsing and configuring GitHub authentication..."
 
-        # Parse and configure each organization
+        # Parse, validate, and configure each organization
         echo "$HELPERS_JSON" | python3 -c "
-        import json
-        import subprocess
-        import sys
+import json
+import subprocess
+import sys
 
-        helpers = json.load(sys.stdin)
-        configured_orgs = []
+helpers = json.load(sys.stdin)
+configured_orgs = []
+total_count = len(helpers)
 
-        for org, token in helpers.items():
-            if not token.startswith(('ghp_', 'github_pat_')):
-                print(f'⚠️ Token for {org} doesn\\'t look like a GitHub PAT', file=sys.stderr)
+print(f'📊 Found {total_count} organization helper(s)')
 
-            # Configure git to use token for this organization
-            git_url = f'https://{token}@github.com/{org}/'
-            insteadof_url = f'https://github.com/{org}/'
+for org, token in helpers.items():
+    display_org = f'{org[0]}...{org[-1]}' if len(org) > 2 else org
 
-            try:
-                subprocess.run([
-                    'git', 'config', '--global',
-                    f'url.{git_url}.insteadOf',
-                    insteadof_url
-                ], check=True, capture_output=True)
+    if '${{ inputs.log-level }}' != 'minimal':
+        print(f'🔍 Processing: {display_org}')
 
-                configured_orgs.append(org)
+    # Validate token format
+    if not token.startswith(('ghp_', 'github_pat_')):
+        print(f'  ⚠️ Token for {display_org} doesn\\'t look like a GitHub PAT', file=sys.stderr)
 
-            except subprocess.CalledProcessError as e:
-                print(f'❌ Failed to configure git for {org}: {e}', file=sys.stderr)
-                sys.exit(1)
+    # Configure git to use token for this organization
+    git_url = f'https://{token}@github.com/{org}/'
+    insteadof_url = f'https://github.com/{org}/'
 
-        if configured_orgs:
-            print(f'✅ Configured GitHub auth for organizations: {\", \".join(configured_orgs)}')
-        else:
-            print('ℹ️ No organizations configured for GitHub auth')
+    try:
+        subprocess.run([
+            'git', 'config', '--global',
+            f'url.{git_url}.insteadOf',
+            insteadof_url
+        ], check=True, capture_output=True)
+
+        configured_orgs.append(org)
+
+        if '${{ inputs.log-level }}' != 'minimal':
+            print(f'  ✅ Configured git access for {display_org}')
+
+    except subprocess.CalledProcessError as e:
+        print(f'❌ Failed to configure git for {display_org}: {e}', file=sys.stderr)
+        sys.exit(1)
+
+print(f'✅ Successfully configured {len(configured_orgs)} organizations')
+
+# Write outputs to a temp file that bash can read
+with open('/tmp/auth_outputs', 'w') as f:
+    f.write(f'COUNT={len(configured_orgs)}\\n')
+    f.write(f'ORGS={\",\".join(configured_orgs)}\\n')
         "
+
+        # Read outputs from Python script
+        if [ -f "/tmp/auth_outputs" ]; then
+          source /tmp/auth_outputs
+          echo "helpers-count=$COUNT" >> $GITHUB_OUTPUT
+          echo "configured-orgs=$ORGS" >> $GITHUB_OUTPUT
+          rm -f /tmp/auth_outputs
+        else
+          echo "helpers-count=0" >> $GITHUB_OUTPUT
+          echo "configured-orgs=" >> $GITHUB_OUTPUT
+        fi
 
 branding:
   icon: 'key'
