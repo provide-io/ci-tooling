@@ -74,13 +74,13 @@ runs:
         # Install the project in development mode with dependency groups
         if [ -f "pyproject.toml" ] && grep -q "\[dependency-groups\]" pyproject.toml; then
           echo "📋 Installing with dependency groups: ${{ inputs.dependency-groups }}"
-          uv pip install -e . --group ${{ inputs.dependency-groups }}
+          uv pip install --system -e . --group ${{ inputs.dependency-groups }}
         elif [ -f "pyproject.toml" ] && grep -q "\[project.optional-dependencies\]" pyproject.toml; then
           echo "📋 Installing with optional dependencies: ${{ inputs.dependency-groups }}"
-          uv pip install -e .[${{ inputs.dependency-groups }}]
+          uv pip install --system -e .[${{ inputs.dependency-groups }}]
         else
           echo "📋 Installing basic project"
-          uv pip install -e .
+          uv pip install --system -e .
         fi
 
         echo "✅ Dependencies installed"
