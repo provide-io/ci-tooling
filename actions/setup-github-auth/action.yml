@@ -1,5 +1,5 @@
 name: 'Setup GitHub Auth'
-description: 'Configure git authentication for private repositories using organization helper tokens'
+description: 'Parse and configure git authentication for private repositories using organization helper tokens'
 author: 'provide.io llc'
 
 inputs:
@@ -7,6 +7,18 @@ inputs:
     description: 'Environment variable containing the organization helper tokens JSON'
     required: false
     default: 'GH_ORG_HELPERS'
+  log-level:
+    description: 'Logging level: minimal, standard, detailed'
+    required: false
+    default: 'standard'
+
+outputs:
+  helpers-count:
+    description: 'Number of helper organizations found'
+    value: ${{ steps.setup.outputs.helpers-count }}
+  configured-orgs:
+    description: 'List of configured organizations'
+    value: ${{ steps.setup.outputs.configured-orgs }}
 
 runs:
   using: 'composite'
