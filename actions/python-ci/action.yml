@@ -149,16 +149,7 @@ runs:
 
           # Extract coverage percentage
           if [ -f "coverage.xml" ]; then
-            COVERAGE=$(python -c "
-import xml.etree.ElementTree as ET
-tree = ET.parse('coverage.xml')
-root = tree.getroot()
-coverage = root.get('line-rate')
-if coverage:
-    print(f'{float(coverage)*100:.1f}')
-else:
-    print('0')
-" 2>/dev/null || echo "0")
+            COVERAGE=$(python -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); coverage = root.get('line-rate'); print(f'{float(coverage)*100:.1f}' if coverage else '0')" 2>/dev/null || echo "0")
             echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
             echo "📊 Coverage: ${COVERAGE}%"
           else
