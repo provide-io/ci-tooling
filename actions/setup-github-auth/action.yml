@@ -1,0 +1,72 @@
+name: 'Setup GitHub Auth'
+description: 'Configure git authentication for private repositories using organization helper tokens'
+author: 'provide.io llc'
+
+inputs:
+  helpers-env-var:
+    description: 'Environment variable containing the organization helper tokens JSON'
+    required: false
+    default: 'GH_ORG_HELPERS'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🔐 Configure GitHub Authentication
+      shell: bash
+      run: |
+        # Get the environment variable value
+        HELPERS_VAR_NAME="${{ inputs.helpers-env-var }}"
+        HELPERS_JSON="${!HELPERS_VAR_NAME}"
+
+        if [ -z "$HELPERS_JSON" ]; then
+          echo "ℹ️ No $HELPERS_VAR_NAME found - using public access only"
+          exit 0
+        fi
+
+        # Validate JSON format
+        if ! echo "$HELPERS_JSON" | python3 -m json.tool >/dev/null 2>&1; then
+          echo "❌ Invalid JSON format in $HELPERS_VAR_NAME"
+          exit 1
+        fi
+
+        echo "🔧 Configuring GitHub authentication..."
+
+        # Parse and configure each organization
+        echo "$HELPERS_JSON" | python3 -c "
+        import json
+        import subprocess
+        import sys
+
+        helpers = json.load(sys.stdin)
+        configured_orgs = []
+
+        for org, token in helpers.items():
+            if not token.startswith(('ghp_', 'github_pat_')):
+                print(f'⚠️ Token for {org} doesn\\'t look like a GitHub PAT', file=sys.stderr)
+
+            # Configure git to use token for this organization
+            git_url = f'https://{token}@github.com/{org}/'
+            insteadof_url = f'https://github.com/{org}/'
+
+            try:
+                subprocess.run([
+                    'git', 'config', '--global',
+                    f'url.{git_url}.insteadOf',
+                    insteadof_url
+                ], check=True, capture_output=True)
+
+                configured_orgs.append(org)
+
+            except subprocess.CalledProcessError as e:
+                print(f'❌ Failed to configure git for {org}: {e}', file=sys.stderr)
+                sys.exit(1)
+
+        if configured_orgs:
+            print(f'✅ Configured GitHub auth for organizations: {\", \".join(configured_orgs)}')
+        else:
+            print('ℹ️ No organizations configured for GitHub auth')
+        "
+
+branding:
+  icon: 'key'
+  color: 'green'
