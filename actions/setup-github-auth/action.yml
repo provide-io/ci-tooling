@@ -68,7 +68,7 @@ for org, token in helpers.items():
 
     # Validate token format
     if not token.startswith(('ghp_', 'github_pat_')):
-        print(f'  ⚠️ Token for {display_org} doesn\\'t look like a GitHub PAT', file=sys.stderr)
+        print(f'  ⚠️ Token for {display_org} doesnt look like a GitHub PAT', file=sys.stderr)
 
     # Configure git to use token for this organization
     git_url = f'https://{token}@github.com/{org}/'
