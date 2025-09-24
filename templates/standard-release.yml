@@ -1,0 +1,166 @@
+name: 🚀 Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Workflow run ID with artifacts to release (leave empty to use latest CI)'
+        required: false
+        type: string
+      publish_testpypi:
+        description: 'Publish to TestPyPI'
+        required: false
+        default: true
+        type: boolean
+      publish_pypi:
+        description: 'Publish to PyPI'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  id-token: write  # Required for trusted publishing
+
+jobs:
+  # ==================================================================================
+  # 📥 Download Build Artifacts
+  # ==================================================================================
+  download-artifacts:
+    name: 📥 Download Artifacts
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-found: ${{ steps.download.conclusion == 'success' }}
+
+    steps:
+      - name: 🔍 Find artifact source
+        id: find-artifact
+        run: |
+          if [ -n "${{ inputs.run_id }}" ]; then
+            echo "📦 Using artifacts from run: ${{ inputs.run_id }}"
+            echo "run-id=${{ inputs.run_id }}" >> $GITHUB_OUTPUT
+          else
+            # Get the latest successful CI run
+            echo "🔍 Finding latest CI artifacts..."
+            LATEST_RUN=$(gh run list --workflow=ci.yml --status=success --limit=1 --json databaseId --jq '.[0].databaseId' || echo "")
+            if [ -z "$LATEST_RUN" ]; then
+              echo "❌ No successful CI runs found"
+              exit 1
+            fi
+            echo "📦 Using artifacts from latest CI run: $LATEST_RUN"
+            echo "run-id=$LATEST_RUN" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+
+      - name: 📥 Download artifacts
+        id: download
+        uses: actions/download-artifact@v4
+        with:
+          name: python-packages
+          path: dist/
+          run-id: ${{ steps.find-artifact.outputs.run-id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📋 List artifacts
+        run: |
+          echo "📦 Downloaded artifacts:"
+          ls -la dist/ || echo "No artifacts found"
+
+      - name: 📤 Upload artifacts for release
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-dist
+          path: dist/
+
+  # ==================================================================================
+  # 🧪 Test Release (TestPyPI)
+  # ==================================================================================
+  test-release:
+    name: 🧪 Test Release (TestPyPI)
+    needs: download-artifacts
+    runs-on: ubuntu-latest
+    if: inputs.publish_testpypi || github.event_name == 'push'
+    permissions:
+      id-token: write  # Required for trusted publishing
+
+    steps:
+      - name: 📥 Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-dist
+          path: dist/
+
+      - name: 📤 Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+      - name: 📋 TestPyPI Summary
+        run: |
+          echo "🧪 Published to TestPyPI successfully!"
+          echo "🔗 View at: https://test.pypi.org/project/$(basename $(pwd))/"
+
+  # ==================================================================================
+  # 🚀 Production Release (PyPI)
+  # ==================================================================================
+  release:
+    name: 🚀 Release to PyPI
+    needs: [download-artifacts, test-release]
+    runs-on: ubuntu-latest
+    if: |
+      always() &&
+      needs.download-artifacts.result == 'success' &&
+      (inputs.publish_pypi || startsWith(github.ref, 'refs/tags/')) &&
+      (!inputs.publish_testpypi || needs.test-release.result == 'success')
+    permissions:
+      id-token: write  # Required for trusted publishing
+
+    steps:
+      - name: 📥 Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-dist
+          path: dist/
+
+      - name: 📤 Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: 📋 PyPI Summary
+        run: |
+          echo "🚀 Published to PyPI successfully!"
+          echo "🔗 View at: https://pypi.org/project/$(basename $(pwd))/"
+
+  # ==================================================================================
+  # 📝 GitHub Release
+  # ==================================================================================
+  github-release:
+    name: 📝 Create GitHub Release
+    needs: release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-dist
+          path: dist/
+
+      - name: 📝 Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

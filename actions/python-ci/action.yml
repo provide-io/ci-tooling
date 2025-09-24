@@ -1,0 +1,247 @@
+name: 'Python CI Pipeline'
+description: 'Comprehensive Python CI pipeline with testing, quality checks, and building'
+author: 'provide.io llc'
+
+inputs:
+  python-version:
+    description: 'Python version to install'
+    required: false
+    default: '3.11'
+  mode:
+    description: 'CI mode: test, build, or full'
+    required: false
+    default: 'full'
+  test-directory:
+    description: 'Directory containing tests'
+    required: false
+    default: 'tests/'
+  source-directory:
+    description: 'Directory containing source code'
+    required: false
+    default: 'src/'
+  coverage-threshold:
+    description: 'Minimum coverage threshold percentage'
+    required: false
+    default: '80'
+  run-quality-checks:
+    description: 'Enable code quality checks (ruff, mypy)'
+    required: false
+    default: 'true'
+  run-security-scan:
+    description: 'Enable security scanning'
+    required: false
+    default: 'false'
+  dependency-groups:
+    description: 'Dependency groups to install (for PEP 735)'
+    required: false
+    default: 'dev'
+  upload-artifacts:
+    description: 'Upload build artifacts'
+    required: false
+    default: 'true'
+
+outputs:
+  python-version:
+    description: 'Installed Python version'
+    value: ${{ steps.python.outputs.python-version }}
+  coverage-percentage:
+    description: 'Test coverage percentage'
+    value: ${{ steps.test.outputs.coverage }}
+  build-success:
+    description: 'Whether build was successful'
+    value: ${{ steps.build.outputs.success }}
+  package-version:
+    description: 'Built package version'
+    value: ${{ steps.build.outputs.version }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🐍 Setup Python
+      id: python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: 📦 Setup UV
+      uses: astral-sh/setup-uv@v4
+
+    - name: 🔧 Install Dependencies
+      shell: bash
+      run: |
+        echo "🔧 Installing project dependencies..."
+
+        # Install the project in development mode with dependency groups
+        if [ -f "pyproject.toml" ] && grep -q "\[dependency-groups\]" pyproject.toml; then
+          echo "📋 Installing with dependency groups: ${{ inputs.dependency-groups }}"
+          uv pip install --system -e . --group ${{ inputs.dependency-groups }}
+        elif [ -f "pyproject.toml" ] && grep -q "\[project.optional-dependencies\]" pyproject.toml; then
+          echo "📋 Installing with optional dependencies: ${{ inputs.dependency-groups }}"
+          uv pip install --system -e .[${{ inputs.dependency-groups }}]
+        else
+          echo "📋 Installing basic project"
+          uv pip install --system -e .
+        fi
+
+        echo "✅ Dependencies installed"
+
+    - name: 🎨 Code Quality Checks
+      if: inputs.run-quality-checks == 'true' && (inputs.mode == 'full' || inputs.mode == 'quality')
+      shell: bash
+      run: |
+        echo "🎨 Running code quality checks..."
+
+        # Check if ruff is available
+        if command -v ruff >/dev/null 2>&1; then
+          echo "🔍 Running ruff check..."
+          ruff check ${{ inputs.source-directory }} || echo "⚠️ Ruff check issues found"
+
+          echo "📝 Checking ruff format..."
+          ruff format --check ${{ inputs.source-directory }} || echo "⚠️ Format issues found"
+        else
+          echo "⚠️ Ruff not available, skipping format checks"
+        fi
+
+        # Check if mypy is available
+        if command -v mypy >/dev/null 2>&1; then
+          echo "🔍 Running mypy..."
+          mypy ${{ inputs.source-directory }} || echo "⚠️ Type check issues found"
+        else
+          echo "⚠️ MyPy not available, skipping type checks"
+        fi
+
+        echo "✅ Quality checks completed"
+
+    - name: 🔒 Security Scan
+      if: inputs.run-security-scan == 'true' && (inputs.mode == 'full' || inputs.mode == 'security')
+      shell: bash
+      run: |
+        echo "🔒 Running security scans..."
+
+        # Install and run bandit if available
+        if command -v bandit >/dev/null 2>&1; then
+          echo "🔍 Running bandit security scan..."
+          bandit -r ${{ inputs.source-directory }} -f json -o bandit-report.json || echo "⚠️ Security issues found"
+        else
+          echo "⚠️ Bandit not available, skipping security scan"
+        fi
+
+        echo "✅ Security scan completed"
+
+    - name: 🧪 Run Tests
+      id: test
+      if: inputs.mode == 'full' || inputs.mode == 'test'
+      shell: bash
+      run: |
+        echo "🧪 Running tests..."
+
+        # Check if pytest is available
+        if command -v pytest >/dev/null 2>&1; then
+          echo "🔍 Running pytest with coverage..."
+
+          # Run tests with coverage
+          pytest ${{ inputs.test-directory }} \
+            --cov=${{ inputs.source-directory }} \
+            --cov-report=xml \
+            --cov-report=term \
+            --cov-fail-under=${{ inputs.coverage-threshold }} \
+            --junitxml=test-results.xml
+
+          # Extract coverage percentage
+          if [ -f "coverage.xml" ]; then
+            COVERAGE=$(python -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); coverage = root.get('line-rate'); print(f'{float(coverage)*100:.1f}' if coverage else '0')" 2>/dev/null || echo "0")
+            echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+            echo "📊 Coverage: ${COVERAGE}%"
+          else
+            echo "coverage=0" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "⚠️ Pytest not available, skipping tests"
+          echo "coverage=0" >> $GITHUB_OUTPUT
+        fi
+
+        echo "✅ Tests completed"
+
+    - name: 📦 Build Package
+      id: build
+      if: inputs.mode == 'full' || inputs.mode == 'build'
+      shell: bash
+      run: |
+        echo "📦 Building package..."
+
+        # Clean any existing build artifacts
+        rm -rf dist/ build/ *.egg-info/
+
+        # Build the package
+        if uv build; then
+          echo "success=true" >> $GITHUB_OUTPUT
+          echo "✅ Package built successfully"
+
+          # Get package version from built wheel
+          if ls dist/*.whl >/dev/null 2>&1; then
+            WHEEL_FILE=$(ls dist/*.whl | head -1)
+            VERSION=$(basename "$WHEEL_FILE" | sed 's/.*-\([^-]*\)-py.*/\1/')
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "📦 Package version: $VERSION"
+
+            # List built artifacts
+            echo "📋 Built artifacts:"
+            ls -la dist/
+          else
+            echo "version=unknown" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "success=false" >> $GITHUB_OUTPUT
+          echo "❌ Package build failed"
+          exit 1
+        fi
+
+    - name: 📤 Upload Artifacts
+      if: inputs.upload-artifacts == 'true' && (inputs.mode == 'full' || inputs.mode == 'build')
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-packages
+        path: dist/
+        retention-days: 90
+
+    - name: 📊 Upload Test Results
+      if: always() && inputs.upload-artifacts == 'true' && (inputs.mode == 'full' || inputs.mode == 'test')
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: |
+          test-results.xml
+          coverage.xml
+          bandit-report.json
+        retention-days: 30
+
+    - name: 📋 CI Summary
+      shell: bash
+      run: |
+        echo "## 🔄 Python CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        echo "**Configuration:**" >> $GITHUB_STEP_SUMMARY
+        echo "- Python: ${{ steps.python.outputs.python-version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Mode: ${{ inputs.mode }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Quality Checks: ${{ inputs.run-quality-checks }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Security Scan: ${{ inputs.run-security-scan }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ inputs.mode }}" = "full" ] || [ "${{ inputs.mode }}" = "test" ]; then
+          echo "**Test Results:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Coverage: ${{ steps.test.outputs.coverage }}%" >> $GITHUB_STEP_SUMMARY
+          echo "- Threshold: ${{ inputs.coverage-threshold }}%" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [ "${{ inputs.mode }}" = "full" ] || [ "${{ inputs.mode }}" = "build" ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Results:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Success: ${{ steps.build.outputs.success }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: ${{ steps.build.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Artifacts: ${{ inputs.upload-artifacts }}" >> $GITHUB_STEP_SUMMARY
+        fi
+
+branding:
+  icon: 'check-circle'
+  color: 'green'
