@@ -4,22 +4,39 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ci-tooling"
-version = "0.0.1"
+dynamic = ["version"]
 description = "Shared CI/CD tooling for provide.io projects"
 authors = [{name = "provide.io", email = "code@provide.io"}]
-license = "Apache-2.0"
+license = {text = "Apache-2.0"}
 requires-python = ">=3.11"
 dependencies = []
+
+[dependency-groups]
+dev = [
+    "provide-testkit[standard,build]",
+]
 
 [tool.setuptools]
 packages = []
 py-modules = []
+
+[tool.setuptools.dynamic]
+version = {file = "VERSION"}
 
 [project.urls]
 Homepage = "https://github.com/provide-io/ci-tooling"
 Repository = "https://github.com/provide-io/ci-tooling"
 
 [tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "DEBUG"
 testpaths = ["examples"]
+pythonpath = ["."]
 python_files = ["test_*.py"]
+python_classes = ["Test*"]
 python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks integration tests",
+    "unit: marks unit tests",
+]
