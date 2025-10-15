@@ -7,7 +7,7 @@ name = "ci-tooling"
 dynamic = ["version"]
 description = "Shared CI/CD tooling for provide.io projects"
 authors = [{name = "provide.io", email = "code@provide.io"}]
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 requires-python = ">=3.11"
 dependencies = []
 
