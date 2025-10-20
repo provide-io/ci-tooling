@@ -3,7 +3,7 @@ Name: ci-tooling
 Version: 0.0.0
 Summary: Shared CI/CD tooling for provide.io projects
 Author-email: "provide.io" <engineering@provide.io>
-License: Apache-2.0
+License-Expression: Apache-2.0
 Project-URL: Homepage, https://github.com/provide-io/ci-tooling
 Project-URL: Repository, https://github.com/provide-io/ci-tooling
 Requires-Python: >=3.11
