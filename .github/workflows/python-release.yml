@@ -130,7 +130,7 @@ jobs:
           uv-version: ${{ inputs.uv-version }}
 
       - name: 📦 Download Build Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: release-artifacts
           path: dist/
@@ -204,7 +204,7 @@ jobs:
           uv-version: ${{ inputs.uv-version }}
 
       - name: 📦 Download Build Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: release-artifacts
           path: dist/
