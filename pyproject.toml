@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "ci-tooling"
 dynamic = ["version"]
 description = "Shared CI/CD tooling for provide.io projects"
+readme = "README.md"
 authors = [{name = "provide.io", email = "code@provide.io"}]
 license = "Apache-2.0"
 requires-python = ">=3.11"
