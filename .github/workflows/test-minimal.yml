@@ -1,0 +1,32 @@
+name: Test Minimal
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-setup:
+    name: Test setup-python-env only
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test setup-python-env action
+        uses: ./actions/setup-python-env
+        with:
+          python-version: '3.11'
+          uv-version: '0.7.8'
+          install-extras: ''
+          cache-dependencies: false
+
+      - name: Verify installation
+        shell: bash
+        run: |
+          source ./workenv/bin/activate
+          python --version
+          uv --version
+          echo "✅ Python: $(python --version)"
+          echo "✅ UV: $(uv --version)"
+          echo "✅ setup-python-env test passed"

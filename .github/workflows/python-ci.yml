@@ -1,0 +1,233 @@
+name: 'Reusable Python CI'
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: 'Python version to use'
+        type: string
+        default: '3.11'
+      uv-version:
+        description: 'UV version to use'
+        type: string
+        default: '0.7.8'
+      source-paths:
+        description: 'Source paths for quality checks'
+        type: string
+        default: 'src/ tests/'
+      test-directory:
+        description: 'Test directory'
+        type: string
+        default: 'tests/'
+      coverage-threshold:
+        description: 'Coverage threshold percentage'
+        type: number
+        default: 80
+      run-security:
+        description: 'Run security scanning'
+        type: boolean
+        default: true
+      run-performance:
+        description: 'Run performance tests'
+        type: boolean
+        default: false
+      matrix-testing:
+        description: 'Enable matrix testing across Python versions'
+        type: boolean
+        default: false
+      os-matrix:
+        description: 'Operating systems to test on'
+        type: string
+        default: 'ubuntu-latest'
+      fail-fast:
+        description: 'Fail fast in matrix builds'
+        type: boolean
+        default: false
+    secrets:
+      CODECOV_TOKEN:
+        description: 'Codecov token for coverage upload'
+        required: false
+
+env:
+  FORCE_COLOR: "1"
+  UV_SYSTEM_PYTHON: "1"
+
+jobs:
+  # ==================================================================================
+  # 🔧 Code Quality & Type Checking
+  # ==================================================================================
+  quality:
+    name: 🔧 Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python Environment
+        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+        with:
+          python-version: ${{ inputs.python-version }}
+          uv-version: ${{ inputs.uv-version }}
+
+      - name: 🎨 Run Quality Checks
+        uses: provide-io/ci-tooling/actions/python-quality@v0
+        with:
+          source-paths: ${{ inputs.source-paths }}
+
+  # ==================================================================================
+  # 🧪 Tests
+  # ==================================================================================
+  test:
+    name: 🧪 Tests
+    needs: quality
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        os: ${{ fromJson(format('["{0}"]', inputs.os-matrix)) }}
+        python-version:
+          - ${{ inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version) }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python Environment
+        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+        with:
+          python-version: ${{ matrix.python-version }}
+          uv-version: ${{ inputs.uv-version }}
+
+      - name: 🧪 Run Tests
+        uses: provide-io/ci-tooling/actions/python-test@v0
+        with:
+          test-directory: ${{ inputs.test-directory }}
+          coverage-threshold: ${{ inputs.coverage-threshold }}
+          upload-coverage: ${{ secrets.CODECOV_TOKEN != '' }}
+
+      - name: 📤 Upload Coverage
+        if: secrets.CODECOV_TOKEN != ''
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
+
+  # ==================================================================================
+  # 🔒 Security Scanning
+  # ==================================================================================
+  security:
+    name: 🔒 Security
+    needs: quality
+    if: inputs.run-security
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python Environment
+        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+        with:
+          python-version: ${{ inputs.python-version }}
+          uv-version: ${{ inputs.uv-version }}
+
+      - name: 🔒 Security Scan
+        uses: provide-io/ci-tooling/actions/python-security@v0
+        with:
+          source-paths: ${{ inputs.source-paths }}
+
+      - name: 📤 Upload SARIF results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: security-results.sarif
+
+  # ==================================================================================
+  # 🚀 Performance Tests
+  # ==================================================================================
+  performance:
+    name: 🚀 Performance
+    needs: test
+    if: inputs.run-performance
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python Environment
+        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+        with:
+          python-version: ${{ inputs.python-version }}
+          uv-version: ${{ inputs.uv-version }}
+
+      - name: 🚀 Run Performance Tests
+        shell: bash
+        run: |
+          source ./workenv/bin/activate
+
+          # Check if pytest-benchmark is available
+          if pip list | grep -q pytest-benchmark; then
+            echo "🚀 Running performance benchmarks..."
+            pytest --benchmark-only --benchmark-json=benchmark.json
+
+            # Generate performance summary
+            echo "## 🚀 Performance Results" >> $GITHUB_STEP_SUMMARY
+            echo "| Test | Status |" >> $GITHUB_STEP_SUMMARY
+            echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Benchmarks | ✅ Completed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ pytest-benchmark not found, skipping performance tests"
+          fi
+
+      - name: 📤 Upload Performance Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: benchmark.json
+          retention-days: 30
+
+  # ==================================================================================
+  # 📋 CI Summary
+  # ==================================================================================
+  summary:
+    name: 📋 CI Summary
+    needs: [quality, test, security, performance]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📋 Generate Summary
+        shell: bash
+        run: |
+          echo "## 🎯 CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | ${{ needs.quality.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ inputs.run-security }}" = "true" ]; then
+            echo "| Security | ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ inputs.run-performance }}" = "true" ]; then
+            echo "| Performance | ${{ needs.performance.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Overall status
+          OVERALL="✅ Success"
+          if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ]; then
+            OVERALL="❌ Failed"
+          fi
+          if [ "${{ inputs.run-security }}" = "true" ] && [ "${{ needs.security.result }}" != "success" ]; then
+            OVERALL="❌ Failed"
+          fi
+          if [ "${{ inputs.run-performance }}" = "true" ] && [ "${{ needs.performance.result }}" != "success" ]; then
+            OVERALL="❌ Failed"
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Overall Result:** $OVERALL" >> $GITHUB_STEP_SUMMARY

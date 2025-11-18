@@ -1,0 +1,274 @@
+name: Test Actions
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FORCE_COLOR: "1"
+
+jobs:
+  # ==================================================================================
+  # 🧪 Test Individual Actions
+  # ==================================================================================
+  test-setup-python-env:
+    name: 🐍 Test setup-python-env
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🧪 Test setup-python-env action
+        uses: ./actions/setup-python-env
+        with:
+          python-version: '3.11'
+          uv-version: '0.7.8'
+          cache-dependencies: false
+
+      - name: ✅ Verify installation
+        shell: bash
+        run: |
+          source ./workenv/bin/activate
+          python --version
+          uv --version
+          echo "✅ setup-python-env test passed"
+
+  test-python-quality:
+    name: 🎨 Test python-quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python Environment
+        uses: ./actions/setup-python-env
+        with:
+          python-version: '3.11'
+          cache-dependencies: false
+
+      - name: 📝 Create test files
+        shell: bash
+        run: |
+          mkdir -p test_src
+          cat > test_src/example.py << 'EOF'
+          """Example Python file for testing."""
+
+          def hello_world() -> str:
+              """Return a greeting."""
+              return "Hello, World!"
+
+          if __name__ == "__main__":
+              print(hello_world())
+          EOF
+
+      - name: 🧪 Test python-quality action
+        uses: ./actions/python-quality
+        with:
+          source-paths: 'test_src/'
+          fail-on-error: false
+
+  test-python-test:
+    name: 🧪 Test python-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python Environment
+        uses: ./actions/setup-python-env
+        with:
+          python-version: '3.11'
+          cache-dependencies: false
+
+      - name: 📝 Create test files
+        shell: bash
+        run: |
+          source ./workenv/bin/activate
+          uv pip install pytest pytest-cov
+
+          mkdir -p test_src test_tests
+          cat > test_src/calculator.py << 'EOF'
+          """Simple calculator for testing."""
+
+          def add(a: int, b: int) -> int:
+              """Add two numbers."""
+              return a + b
+
+          def multiply(a: int, b: int) -> int:
+              """Multiply two numbers."""
+              return a * b
+          EOF
+
+          cat > test_tests/test_calculator.py << 'EOF'
+          """Tests for calculator."""
+          from test_src.calculator import add, multiply
+
+          def test_add():
+              """Test addition."""
+              assert add(2, 3) == 5
+              assert add(-1, 1) == 0
+
+          def test_multiply():
+              """Test multiplication."""
+              assert multiply(3, 4) == 12
+              assert multiply(0, 5) == 0
+          EOF
+
+      - name: 🧪 Test python-test action
+        uses: ./actions/python-test
+        with:
+          test-directory: 'test_tests/'
+          source-directory: 'test_src/'
+          coverage-threshold: 50
+
+  test-python-security:
+    name: 🔒 Test python-security
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python Environment
+        uses: ./actions/setup-python-env
+        with:
+          python-version: '3.11'
+          cache-dependencies: false
+
+      - name: 📝 Create test files
+        shell: bash
+        run: |
+          mkdir -p test_src
+          cat > test_src/example.py << 'EOF'
+          """Example with potential security issues for testing."""
+          import subprocess
+          import os
+
+          def safe_function():
+              """A safe function."""
+              return "This is safe"
+
+          def potentially_unsafe():
+              """Function with potential security issue."""
+              # This would normally trigger bandit warnings
+              user_input = "echo hello"
+              result = subprocess.run(user_input, shell=False, capture_output=True, text=True)
+              return result.stdout
+          EOF
+
+      - name: 🧪 Test python-security action
+        uses: ./actions/python-security
+        with:
+          source-paths: 'test_src/'
+          fail-on-findings: false
+
+  test-python-build:
+    name: 🏗️ Test python-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python Environment
+        uses: ./actions/setup-python-env
+        with:
+          python-version: '3.11'
+          cache-dependencies: false
+
+      - name: 📝 Create test package
+        shell: bash
+        run: |
+          cat > pyproject.toml << 'EOF'
+          [build-system]
+          requires = ["setuptools>=61.0", "wheel"]
+          build-backend = "setuptools.build_meta"
+
+          [project]
+          name = "test-package"
+          version = "0.1.0"
+          description = "Test package for CI tooling"
+          authors = [{name = "Test Author", email = "test@example.com"}]
+          license = {text = "Apache-2.0"}
+          requires-python = ">=3.11"
+
+          [project.urls]
+          Homepage = "https://github.com/provide-io/ci-tooling"
+          EOF
+
+          mkdir -p src/test_package
+          cat > src/test_package/__init__.py << 'EOF'
+          """Test package."""
+          __version__ = "0.1.0"
+
+          def hello():
+              """Say hello."""
+              return "Hello from test package!"
+          EOF
+
+      - name: 🧪 Test python-build action
+        uses: ./actions/python-build
+        with:
+          build-backend: 'uv'
+
+      - name: ✅ Verify build artifacts
+        shell: bash
+        run: |
+          ls -la dist/
+          echo "✅ python-build test passed"
+
+  # ==================================================================================
+  # 🔄 Test Reusable Workflows (temporarily disabled)
+  # ==================================================================================
+  # test-python-ci-workflow:
+  #   name: 🔄 Test python-ci workflow
+  #   uses: ./.github/workflows/python-ci.yml
+  #   with:
+  #     python-version: '3.11'
+  #     source-paths: 'scripts/'
+  #     test-directory: 'examples/'
+  #     coverage-threshold: 50
+  #     run-security: false
+  #     matrix-testing: false
+
+  # ==================================================================================
+  # 📊 Test Summary
+  # ==================================================================================
+  test-summary:
+    name: 📊 Test Summary
+    needs: [
+      test-setup-python-env,
+      test-python-quality,
+      test-python-test,
+      test-python-security,
+      test-python-build
+    ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📊 Generate Test Summary
+        shell: bash
+        run: |
+          echo "## 🧪 Action Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Action | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| setup-python-env | ${{ needs.test-setup-python-env.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| python-quality | ${{ needs.test-python-quality.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| python-test | ${{ needs.test-python-test.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| python-security | ${{ needs.test-python-security.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| python-build | ${{ needs.test-python-build.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          # Check overall status
+          if [ "${{ needs.test-setup-python-env.result }}" = "success" ] && \
+             [ "${{ needs.test-python-quality.result }}" = "success" ] && \
+             [ "${{ needs.test-python-test.result }}" = "success" ] && \
+             [ "${{ needs.test-python-security.result }}" = "success" ] && \
+             [ "${{ needs.test-python-build.result }}" = "success" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🎉 **All tests passed!**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Some tests failed**" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi

@@ -1,0 +1,11 @@
+name: Test Reusable Workflow
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-reusable:
+    name: Test reusable workflow directly
+    uses: ./.github/workflows/python-ci.yml

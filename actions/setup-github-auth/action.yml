@@ -1,0 +1,73 @@
+name: 'Setup GitHub Auth'
+description: 'Parse and configure git authentication for private repositories using organization helper tokens'
+author: 'provide.io llc'
+
+inputs:
+  helpers-env-var:
+    description: 'Environment variable containing the organization helper tokens JSON'
+    required: false
+    default: 'GH_ORG_HELPERS'
+  log-level:
+    description: 'Logging level: minimal, standard, detailed'
+    required: false
+    default: 'standard'
+
+outputs:
+  helpers-count:
+    description: 'Number of helper organizations found'
+    value: ${{ steps.setup.outputs.helpers-count }}
+  configured-orgs:
+    description: 'List of configured organizations'
+    value: ${{ steps.setup.outputs.configured-orgs }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🔐 Parse and Configure GitHub Authentication
+      id: setup
+      shell: bash
+      run: |
+        # Get the environment variable value
+        HELPERS_VAR_NAME="${{ inputs.helpers-env-var }}"
+        HELPERS_JSON="${!HELPERS_VAR_NAME}"
+
+        if [ -z "$HELPERS_JSON" ]; then
+          echo "ℹ️ No $HELPERS_VAR_NAME found - using public access only"
+          echo "helpers-count=0" >> $GITHUB_OUTPUT
+          echo "configured-orgs=" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        # Validate JSON format
+        if ! echo "$HELPERS_JSON" | python3 -m json.tool >/dev/null 2>&1; then
+          echo "❌ Invalid JSON format in $HELPERS_VAR_NAME"
+          echo "helpers-count=0" >> $GITHUB_OUTPUT
+          echo "configured-orgs=" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+        echo "🔧 Parsing and configuring GitHub authentication..."
+
+        # Create temporary Python script using base64 to avoid YAML issues
+        echo "aW1wb3J0IGpzb24KaW1wb3J0IHN1YnByb2Nlc3MKaW1wb3J0IHN5cwppbXBvcnQgb3MKCmhlbHBlcnMgPSBqc29uLmxvYWQoc3lzLnN0ZGluKQpjb25maWd1cmVkX29yZ3MgPSBbXQp0b3RhbF9jb3VudCA9IGxlbihoZWxwZXJzKQoKbG9nX2xldmVsID0gb3MuZW52aXJvbi5nZXQoJ0xPR19MRVZFTCcsICdzdGFuZGFyZCcpCgpwcmludChmJ/CfkY4gRm91bmQge3RvdGFsX2NvdW50fSBvcmdhbml6YXRpb24gaGVscGVyKHMpJykKCmZvciBvcmcsIHRva2VuIGluIGhlbHBlcnMuaXRlbXMoKToKICAgIGRpc3BsYXlfb3JnID0gZid7b3JnWzBdfS4uLntvcmdbLTFdfScgaWYgbGVuKG9yZykgPiAyIGVsc2Ugb3JnCgogICAgaWYgbG9nX2xldmVsICE9ICdtaW5pbWFsJzoKICAgICAgICBwcmludChmJ/CflI0gUHJvY2Vzc2luZzoge2Rpc3BsYXlfb3JnfScpCgogICAgIyBWYWxpZGF0ZSB0b2tlbiBmb3JtYXQKICAgIGlmIG5vdCB0b2tlbi5zdGFydHN3aXRoKCgnZ2hwXycsICdnaXRodWJfcGF0XycpKToKICAgICAgICBwcmludChmJyAg76C477+sIFRva2VuIGZvciB7ZGlzcGxheV9vcmd9IGRvZXNudCBsb29rIGxpa2UgYSBHaXRIdWIgUEFUJywgZmlsZT1zeXMuc3RkZXJyKQoKICAgICMgQ29uZmlndXJlIGdpdCB0byB1c2UgdG9rZW4gZm9yIHRoaXMgb3JnYW5pemF0aW9uCiAgICBnaXRfdXJsID0gZidodHRwczovL3t0b2tlbn1AZ2l0aHViLmNvbS97b3JnfS8nCiAgICBpbnN0ZWFkb2ZfdXJsID0gZidodHRwczovL2dpdGh1Yi5jb20ve29yZ30vJwoKICAgIHRyeToKICAgICAgICBzdWJwcm9jZXNzLnJ1bihbCiAgICAgICAgICAgICdnaXQnLCAnY29uZmlnJywgJy0tZ2xvYmFsJywKICAgICAgICAgICAgZid1cmwue2dpdF91cmx9Lmluc3RlYWRPZicsCiAgICAgICAgICAgIGluc3RlYWRvZl91cmwKICAgICAgICBdLCBjaGVjaz1UcnVlLCBjYXB0dXJlX291dHB1dD1UcnVlKQoKICAgICAgICBjb25maWd1cmVkX29yZ3MuYXBwZW5kKG9yZykKCiAgICAgICAgaWYgbG9nX2xldmVsICE9ICdtaW5pbWFsJzoKICAgICAgICAgICAgcHJpbnQoZicgIOKcheKdlSBDb25maWd1cmVkIGdpdCBhY2Nlc3MgZm9yIHtkaXNwbGF5X29yZ30nKQoKICAgIGV4Y2VwdCBzdWJwcm9jZXNzLkNhbGxlZFByb2Nlc3NFcnJvciBhcyBlOgogICAgICAgIHByaW50KGYn4p2MIEZhaWxlZCB0byBjb25maWd1cmUgZ2l0IGZvciB7ZGlzcGxheV9vcmd9OiB7ZX0nLCBmaWxlPXN5cy5zdGRlcnIpCiAgICAgICAgc3lzLmV4aXQoMSkKCnByaW50KGYn4pyFIFN1Y2Nlc3NmdWxseSBjb25maWd1cmVkIHtsZW4oY29uZmlndXJlZF9vcmdzKX0gb3JnYW5pemF0aW9ucycpCgojIFdyaXRlIG91dHB1dHMgdG8gYSB0ZW1wIGZpbGUgdGhhdCBiYXNoIGNhbiByZWFkCndpdGggb3BlbignL3RtcC9hdXRoX291dHB1dHMnLCAndycpIGFzIGY6CiAgICBmLndyaXRlKGYnQ09VTlQ9e2xlbihjb25maWd1cmVkX29yZ3MpfVxuJykKICAgIGYud3JpdGUoZidPUkdTPXsiLCIuam9pbihjb25maWd1cmVkX29yZ3MpfVxuJyk=" | base64 -d > /tmp/setup_auth.py
+
+        # Run the Python script
+        echo "$HELPERS_JSON" | LOG_LEVEL="${{ inputs.log-level }}" python3 /tmp/setup_auth.py
+
+        # Read outputs from Python script
+        if [ -f "/tmp/auth_outputs" ]; then
+          source /tmp/auth_outputs
+          echo "helpers-count=$COUNT" >> $GITHUB_OUTPUT
+          echo "configured-orgs=$ORGS" >> $GITHUB_OUTPUT
+          rm -f /tmp/auth_outputs
+        else
+          echo "helpers-count=0" >> $GITHUB_OUTPUT
+          echo "configured-orgs=" >> $GITHUB_OUTPUT
+        fi
+
+        # Cleanup
+        rm -f /tmp/setup_auth.py
+
+branding:
+  icon: 'key'
+  color: 'green'
