@@ -1,0 +1,20 @@
+# Pre-commit hooks for provide.io ecosystem conformance
+# See: https://pre-commit.com/
+
+- id: provide-conform
+  name: SPDX Headers & Footer Conformance
+  description: Automatically adds SPDX headers and repository-specific footers
+  entry: python -m provide.cicd.conform
+  language: python
+  types: [python]
+  require_serial: true
+  verbose: true
+
+- id: provide-config-check
+  name: Configuration Standardization Check
+  description: Validates ruff/mypy/pytest configs match canonical standards
+  entry: python -m provide.cicd.config_check
+  language: python
+  files: ^pyproject\.toml$
+  pass_filenames: true
+  verbose: true

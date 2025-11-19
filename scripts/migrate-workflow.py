@@ -10,17 +10,17 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import os
-import sys
-import yaml
 from pathlib import Path
-from typing import Any, Dict, List
+import sys
+from typing import Any
+
+import yaml
 
 
 class WorkflowMigrator:
     """Migrates existing GitHub workflows to use shared actions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.shared_actions = {
             "setup-python": "provide-io/ci-tooling/actions/setup-python-env@v0",
             "python-quality": "provide-io/ci-tooling/actions/python-quality@v0",
@@ -35,7 +35,7 @@ class WorkflowMigrator:
             "python-release": "provide-io/ci-tooling/workflows/python-release.yml@v0",
         }
 
-    def analyze_project(self, project_path: str) -> Dict[str, Any]:
+    def analyze_project(self, project_path: str) -> dict[str, Any]:
         """Analyze a project to suggest migration strategy."""
         project_path = Path(project_path)
         analysis = {
@@ -58,7 +58,7 @@ class WorkflowMigrator:
         if workflows_dir.exists():
             for workflow_file in workflows_dir.glob("*.yml"):
                 try:
-                    with open(workflow_file) as f:
+                    with workflow_file.open() as f:
                         workflow_data = yaml.safe_load(f)
 
                     workflow_analysis = self._analyze_workflow(workflow_data)
@@ -73,7 +73,7 @@ class WorkflowMigrator:
 
         return analysis
 
-    def _analyze_workflow(self, workflow_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_workflow(self, workflow_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze a single workflow file."""
         analysis = {
             "name": workflow_data.get("name", "Unknown"),
@@ -94,7 +94,7 @@ class WorkflowMigrator:
 
         return analysis
 
-    def _analyze_job(self, job_name: str, job_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_job(self, job_name: str, job_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze a single job."""
         steps = job_data.get("steps", [])
 
@@ -109,43 +109,46 @@ class WorkflowMigrator:
         # Analyze steps
         for step in steps:
             if isinstance(step, dict):
-                # Check for common patterns
-                step_name = step.get("name", "")
-                step_uses = step.get("uses", "")
-                step_run = step.get("run", "")
-
-                # Detect tool usage
-                if "python" in step_name.lower() or "setup-python" in step_uses:
-                    job_analysis["tools_used"].append("python")
-                if "uv" in step_run or "uv" in step_name.lower():
-                    job_analysis["tools_used"].append("uv")
-                if "ruff" in step_run or "ruff" in step_name.lower():
-                    job_analysis["tools_used"].append("ruff")
-                if "mypy" in step_run or "mypy" in step_name.lower():
-                    job_analysis["tools_used"].append("mypy")
-                if "pytest" in step_run or "test" in step_name.lower():
-                    job_analysis["tools_used"].append("pytest")
-                if (
-                    "bandit" in step_run
-                    or "safety" in step_run
-                    or "security" in step_name.lower()
-                ):
-                    job_analysis["tools_used"].append("security")
+                self._detect_tools_in_step(step, job_analysis["tools_used"])
 
         # Detect patterns based on tools
-        tools = set(job_analysis["tools_used"])
-        if {"python", "uv"} <= tools:
-            job_analysis["patterns"].append("python-setup")
-        if {"ruff"} <= tools or {"mypy"} <= tools:
-            job_analysis["patterns"].append("python-quality")
-        if {"pytest"} <= tools:
-            job_analysis["patterns"].append("python-test")
-        if any(tool in tools for tool in ["bandit", "safety", "security"]):
-            job_analysis["patterns"].append("python-security")
+        job_analysis["patterns"] = self._detect_job_patterns(set(job_analysis["tools_used"]))
 
         return job_analysis
 
-    def _detect_patterns(self, jobs: List[Dict[str, Any]]) -> List[str]:
+    def _detect_tools_in_step(self, step: dict[str, Any], tools_used: list[str]) -> None:
+        """Detect tools used in a workflow step."""
+        step_name = step.get("name", "")
+        step_uses = step.get("uses", "")
+        step_run = step.get("run", "")
+
+        if "python" in step_name.lower() or "setup-python" in step_uses:
+            tools_used.append("python")
+        if "uv" in step_run or "uv" in step_name.lower():
+            tools_used.append("uv")
+        if "ruff" in step_run or "ruff" in step_name.lower():
+            tools_used.append("ruff")
+        if "mypy" in step_run or "mypy" in step_name.lower():
+            tools_used.append("mypy")
+        if "pytest" in step_run or "test" in step_name.lower():
+            tools_used.append("pytest")
+        if "bandit" in step_run or "safety" in step_run or "security" in step_name.lower():
+            tools_used.append("security")
+
+    def _detect_job_patterns(self, tools: set[str]) -> list[str]:
+        """Detect patterns based on tools used."""
+        patterns = []
+        if {"python", "uv"} <= tools:
+            patterns.append("python-setup")
+        if {"ruff"} <= tools or {"mypy"} <= tools:
+            patterns.append("python-quality")
+        if {"pytest"} <= tools:
+            patterns.append("python-test")
+        if any(tool in tools for tool in ["bandit", "safety", "security"]):
+            patterns.append("python-security")
+        return patterns
+
+    def _detect_patterns(self, jobs: list[dict[str, Any]]) -> list[str]:
         """Detect workflow-level patterns."""
         patterns = []
         all_tools = set()
@@ -164,7 +167,7 @@ class WorkflowMigrator:
 
         return patterns
 
-    def _assess_migration_potential(self, workflow_analysis: Dict[str, Any]) -> str:
+    def _assess_migration_potential(self, workflow_analysis: dict[str, Any]) -> str:
         """Assess how suitable a workflow is for migration."""
         patterns = workflow_analysis["patterns"]
         job_count = len(workflow_analysis["jobs"])
@@ -176,12 +179,10 @@ class WorkflowMigrator:
         else:
             return "low"
 
-    def _assess_complexity(self, analysis: Dict[str, Any]) -> str:
+    def _assess_complexity(self, analysis: dict[str, Any]) -> str:
         """Assess overall project complexity for migration."""
         workflow_count = len(analysis["workflows"])
-        high_potential = sum(
-            1 for w in analysis["workflows"] if w["migration_potential"] == "high"
-        )
+        high_potential = sum(1 for w in analysis["workflows"] if w["migration_potential"] == "high")
 
         if workflow_count <= 2 and high_potential >= 1:
             return "low"
@@ -190,52 +191,36 @@ class WorkflowMigrator:
         else:
             return "high"
 
-    def _generate_suggestions(self, analysis: Dict[str, Any]) -> List[str]:
+    def _generate_suggestions(self, analysis: dict[str, Any]) -> list[str]:
         """Generate migration suggestions."""
         suggestions = []
 
         if analysis["project_type"] == "python":
-            suggestions.append(
-                "✅ Python project detected - good candidate for ci-tooling"
-            )
+            suggestions.append("✅ Python project detected - good candidate for ci-tooling")
 
         complexity = analysis["complexity"]
         if complexity == "low":
             suggestions.append("🚀 Low complexity - recommend using reusable workflows")
-            suggestions.append(
-                "📝 Suggested approach: Replace with python-ci.yml workflow"
-            )
+            suggestions.append("📝 Suggested approach: Replace with python-ci.yml workflow")
         elif complexity == "medium":
-            suggestions.append(
-                "🔧 Medium complexity - recommend gradual migration with individual actions"
-            )
-            suggestions.append(
-                "📝 Start with setup-python-env and python-quality actions"
-            )
+            suggestions.append("🔧 Medium complexity - recommend gradual migration with individual actions")
+            suggestions.append("📝 Start with setup-python-env and python-quality actions")
         else:
-            suggestions.append(
-                "⚠️ High complexity - recommend careful step-by-step migration"
-            )
+            suggestions.append("⚠️ High complexity - recommend careful step-by-step migration")
             suggestions.append("📝 Begin with single workflow, then expand")
 
         # Specific action suggestions
         for workflow in analysis["workflows"]:
             if "standard-ci" in workflow["patterns"]:
-                suggestions.append(
-                    f"🔄 {workflow['name']}: Replace with python-ci.yml reusable workflow"
-                )
+                suggestions.append(f"🔄 {workflow['name']}: Replace with python-ci.yml reusable workflow")
             elif "python-setup" in workflow["patterns"]:
-                suggestions.append(
-                    f"🐍 {workflow['name']}: Use setup-python-env action"
-                )
+                suggestions.append(f"🐍 {workflow['name']}: Use setup-python-env action")
 
         return suggestions
 
-    def generate_migrated_workflow(
-        self, original_file: str, strategy: str = "reusable"
-    ) -> str:
+    def generate_migrated_workflow(self, original_file: str, strategy: str = "reusable") -> str:
         """Generate a migrated workflow file."""
-        with open(original_file) as f:
+        with Path(original_file).open() as f:
             original_data = yaml.safe_load(f)
 
         if strategy == "reusable":
@@ -243,12 +228,10 @@ class WorkflowMigrator:
         else:
             return self._generate_action_based_workflow(original_data)
 
-    def _generate_reusable_workflow(self, original_data: Dict[str, Any]) -> str:
+    def _generate_reusable_workflow(self, original_data: dict[str, Any]) -> str:
         """Generate workflow using reusable workflows."""
         workflow_name = original_data.get("name", "CI")
-        triggers = original_data.get(
-            "on", {"push": {"branches": ["main"]}, "pull_request": {}}
-        )
+        triggers = original_data.get("on", {"push": {"branches": ["main"]}, "pull_request": {}})
 
         migrated = {
             "name": workflow_name,
@@ -268,12 +251,10 @@ class WorkflowMigrator:
 
         return yaml.dump(migrated, default_flow_style=False, sort_keys=False)
 
-    def _generate_action_based_workflow(self, original_data: Dict[str, Any]) -> str:
+    def _generate_action_based_workflow(self, original_data: dict[str, Any]) -> str:
         """Generate workflow using individual actions."""
         workflow_name = original_data.get("name", "CI")
-        triggers = original_data.get(
-            "on", {"push": {"branches": ["main"]}, "pull_request": {}}
-        )
+        triggers = original_data.get("on", {"push": {"branches": ["main"]}, "pull_request": {}})
 
         migrated = {
             "name": workflow_name,
@@ -313,14 +294,10 @@ class WorkflowMigrator:
         return yaml.dump(migrated, default_flow_style=False, sort_keys=False)
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Migrate GitHub workflows to use shared actions"
-    )
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Migrate GitHub workflows to use shared actions")
     parser.add_argument("target", help="Workflow file or project directory to analyze")
-    parser.add_argument(
-        "--analyze", action="store_true", help="Analyze project and suggest migration"
-    )
+    parser.add_argument("--analyze", action="store_true", help="Analyze project and suggest migration")
     parser.add_argument(
         "--strategy",
         choices=["reusable", "actions"],
@@ -333,7 +310,7 @@ def main():
 
     migrator = WorkflowMigrator()
 
-    if args.analyze or os.path.isdir(args.target):
+    if args.analyze or Path(args.target).is_dir():
         # Analyze project
         analysis = migrator.analyze_project(args.target)
 
@@ -345,9 +322,7 @@ def main():
 
         print("🔍 Workflows:")
         for workflow in analysis["workflows"]:
-            print(
-                f"  • {workflow['name']} - {workflow['migration_potential']} migration potential"
-            )
+            print(f"  • {workflow['name']} - {workflow['migration_potential']} migration potential")
             print(f"    Patterns: {', '.join(workflow['patterns'])}")
         print()
 
@@ -357,16 +332,14 @@ def main():
 
     else:
         # Migrate specific workflow
-        if not os.path.isfile(args.target):
+        if not Path(args.target).is_file():
             print(f"Error: {args.target} is not a file")
             sys.exit(1)
 
-        migrated_content = migrator.generate_migrated_workflow(
-            args.target, args.strategy
-        )
+        migrated_content = migrator.generate_migrated_workflow(args.target, args.strategy)
 
         if args.output:
-            with open(args.output, "w") as f:
+            with Path(args.output).open("w") as f:
                 f.write(migrated_content)
             print(f"✅ Migrated workflow written to {args.output}")
         else:

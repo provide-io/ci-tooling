@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 """Extract version from built packages."""
 
-import os
+from pathlib import Path
 import re
 import sys
-from pathlib import Path
 
 
 def extract_version_from_wheel(wheel_path: str) -> str:
     """Extract version from wheel filename."""
-    filename = os.path.basename(wheel_path)
+    filename = Path(wheel_path).name
     match = re.search(r"-([0-9]+\.[0-9]+\.[0-9]+.*?)-", filename)
     return match.group(1) if match else "0.0.0"
 
 
 def extract_version_from_tarball(tarball_path: str) -> str:
     """Extract version from tarball filename."""
-    filename = os.path.basename(tarball_path)
+    filename = Path(tarball_path).name
     match = re.search(r"-([0-9]+\.[0-9]+\.[0-9]+.*?)\.tar\.gz", filename)
     return match.group(1) if match else "0.0.0"
 

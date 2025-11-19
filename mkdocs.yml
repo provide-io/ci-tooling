@@ -1,0 +1,79 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Inherit shared configuration from provide-foundry
+INHERIT: .provide/foundry/base-mkdocs.yml
+
+# Project-Specific Configuration
+site_name: CI Tooling
+site_description: Shared GitHub Actions and reusable workflows for provide.io projects
+site_author: provide.io
+site_url: https://foundry.provide.io/ci-tooling/
+repo_url: https://github.com/provide-io/ci-tooling
+repo_name: provide-io/ci-tooling
+edit_uri: edit/main/docs/
+copyright: ©2024-2025 provide.io llc<br/>🛠️ with 💚 and 🦝 on 🌎
+
+# Development server configuration
+dev_addr: '127.0.0.1:11012'
+
+# Standalone mode settings
+docs_dir: docs
+
+# Project-specific theme overrides
+theme:
+  font:
+    text: Inter
+    code: Fira Code
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+# Project-specific plugins (in addition to base plugins)
+plugins:
+  - gen-files:
+      scripts:
+        - .provide/foundry/gen_ref_pages.py
+  - literate-nav:
+      nav_file: SUMMARY.md
+
+# Navigation
+nav:
+  - Home: index.md
+
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quick-start.md
+
+  - Actions:
+    - Overview: actions/index.md
+    - setup-python-env: actions/setup-python-env.md
+    - python-ci: actions/python-ci.md
+    - python-release: actions/python-release.md
+
+  - Workflows:
+    - Overview: workflows/index.md
+    - Python CI: workflows/python-ci.md
+    - Python Release: workflows/python-release.md
+
+  - Pre-commit Hooks: pre-commit-hooks.md
+
+  - Design Documents:
+    - CI Orchestrator Design: ci-orchestrator-design.md
+    - Monitoring Patterns: ci-monitoring-patterns.md
+
+# 🧰⚙️🔚

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Extract package name from built artifacts."""
 
+from pathlib import Path
 import re
 import sys
-from pathlib import Path
 
 
 def main() -> None:
@@ -16,9 +16,7 @@ def main() -> None:
 
     # Look for wheel or tarball files
     for file_path in artifacts_path.iterdir():
-        if file_path.is_file() and (
-            file_path.suffix == ".whl" or file_path.name.endswith(".tar.gz")
-        ):
+        if file_path.is_file() and (file_path.suffix == ".whl" or file_path.name.endswith(".tar.gz")):
             filename = file_path.name
             match = re.match(r"^([^-]+)", filename)
             if match:
