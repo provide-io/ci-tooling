@@ -120,6 +120,7 @@ filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore:Module already imported.*:pytest.PytestAssertRewriteWarning",
 ]
+addopts = "--dist load"
 
 [tool.coverage.run]
 source = ["src/provide/cicd"]
