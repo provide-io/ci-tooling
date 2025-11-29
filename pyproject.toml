@@ -149,5 +149,8 @@ directory = "htmlcov"
 [tool.coverage.xml]
 output = "coverage.xml"
 
+[tool.uv.sources]
+provide-foundry = { path = "../provide-foundry", editable = true }
+
 [tool.bandit]
 exclude_dirs = ["workenv", "tests", ".venv"]
