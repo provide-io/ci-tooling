@@ -121,6 +121,7 @@ filterwarnings = [
     "ignore:Module already imported.*:pytest.PytestAssertRewriteWarning",
 ]
 addopts = "--dist load"
+# Parallel execution: pytest -n <workers> (range: 2-16, recommend: CPU cores or 8, max: 16 to avoid xdist hang)
 
 [tool.coverage.run]
 source = ["src/provide/cicd"]
