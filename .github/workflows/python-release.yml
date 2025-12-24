@@ -93,13 +93,13 @@ jobs:
           fetch-depth: 0
 
       - name: 🐍 Setup Python Environment
-        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+        uses: provide-io/ci-tooling/actions/setup-python-env@main
         with:
           python-version: ${{ inputs.python-version }}
           uv-version: ${{ inputs.uv-version }}
 
       - name: 🏗️ Build Package
-        uses: provide-io/ci-tooling/actions/python-build@v0
+        uses: provide-io/ci-tooling/actions/python-build@main
         with:
           build-backend: ${{ inputs.build-backend }}
 
@@ -124,7 +124,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🐍 Setup Python Environment
-        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+        uses: provide-io/ci-tooling/actions/setup-python-env@main
         with:
           python-version: ${{ inputs.python-version }}
           uv-version: ${{ inputs.uv-version }}
@@ -136,7 +136,7 @@ jobs:
           path: dist/
 
       - name: 🧪 Test Release to TestPyPI
-        uses: provide-io/ci-tooling/actions/python-release@v0
+        uses: provide-io/ci-tooling/actions/python-release@main
         with:
           pypi-token: ${{ secrets.TEST_PYPI_TOKEN }}
           repository-url: 'https://test.pypi.org/legacy/'
@@ -198,7 +198,7 @@ jobs:
           fetch-depth: 0
 
       - name: 🐍 Setup Python Environment
-        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+        uses: provide-io/ci-tooling/actions/setup-python-env@main
         with:
           python-version: ${{ inputs.python-version }}
           uv-version: ${{ inputs.uv-version }}
@@ -247,7 +247,7 @@ jobs:
           fi
 
       - name: 🚀 Release to PyPI
-        uses: provide-io/ci-tooling/actions/python-release@v0
+        uses: provide-io/ci-tooling/actions/python-release@main
         with:
           pypi-token: ${{ secrets.PYPI_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
