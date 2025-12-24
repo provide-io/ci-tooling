@@ -65,16 +65,16 @@ jobs:
           fetch-depth: 0
 
       - name: 🐍 Setup Python Environment
-        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+        uses: provide-io/ci-tooling/actions/setup-python-env@main
         with:
           python-version: ${{ inputs.python-version }}
           uv-version: ${{ inputs.uv-version }}
 
       - name: 🎨 Quality Checks
-        uses: provide-io/ci-tooling/actions/python-quality@v0
+        uses: provide-io/ci-tooling/actions/python-quality@main
 
       - name: 🧪 Run Tests
-        uses: provide-io/ci-tooling/actions/python-test@v0
+        uses: provide-io/ci-tooling/actions/python-test@main
         with:
           coverage-threshold: 80
 
