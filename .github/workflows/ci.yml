@@ -20,7 +20,7 @@ jobs:
       - uses: provide-io/ci-tooling/actions/setup-python-env@main
         with:
           python-version: '3.11'
-          install-extras: 'dev,test'
+          install-extras: 'dev'
       - name: 🎨 Ruff Format Check
         run: |
           source workenv/bin/activate || true
@@ -43,7 +43,7 @@ jobs:
       - uses: provide-io/ci-tooling/actions/setup-python-env@main
         with:
           python-version: '3.11'
-          install-extras: 'dev,test'
+          install-extras: 'dev'
       - name: 🧪 Run Tests
         run: |
           source workenv/bin/activate || true
