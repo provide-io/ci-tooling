@@ -20,10 +20,19 @@ jobs:
       - uses: provide-io/ci-tooling/actions/setup-python-env@v0.0.1
         with:
           python-version: '3.11'
-          install-extras: 'dev,test'
-      - uses: provide-io/ci-tooling/actions/python-quality@v0.0.1
-        with:
-          source-paths: 'src tests'
+          install-extras: 'dev'
+      - name: 🎨 Ruff Format Check
+        run: |
+          source workenv/bin/activate || true
+          ruff format . --check
+      - name: 🔍 Ruff Lint Check
+        run: |
+          source workenv/bin/activate || true
+          ruff check .
+      - name: 🏷️ MyPy Type Check
+        run: |
+          source workenv/bin/activate || true
+          mypy src
 
   test:
     name: Tests
@@ -34,10 +43,15 @@ jobs:
       - uses: provide-io/ci-tooling/actions/setup-python-env@v0.0.1
         with:
           python-version: '3.11'
-          install-extras: 'dev,test'
-      - uses: provide-io/ci-tooling/actions/python-test@v0.0.1
-        with:
-          coverage-threshold: 80
+          install-extras: 'dev'
+      - name: 🧪 Run Tests
+        run: |
+          source workenv/bin/activate || true
+          pytest --cov=src --cov-report=xml --cov-report=term-missing
+      - name: 📊 Check Coverage
+        run: |
+          source workenv/bin/activate || true
+          coverage report --fail-under=80
 
   release:
     name: Release
