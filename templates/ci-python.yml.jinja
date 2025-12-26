@@ -1,0 +1,43 @@
+# CI workflow for Python projects
+# Generated from: ci-tooling/templates/ci-python.yml.jinja
+#
+# This workflow uses wrknv tasks for consistency between local and CI environments.
+# The same `we run ci` command works both locally and in GitHub Actions.
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  ci:
+    runs-on: {{ runner | default('ubuntu-latest') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install {{ python_version | default('3.11') }}
+
+      - name: Install dependencies
+        run: uv sync --all-groups
+
+      - name: Run CI pipeline
+        run: |
+          source .venv/bin/activate
+          we run ci
+{% if codecov_enabled | default(false) %}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: {{ '${{ secrets.CODECOV_TOKEN }}' }}
+{% endif %}
