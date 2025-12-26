@@ -150,8 +150,10 @@ directory = "htmlcov"
 [tool.coverage.xml]
 output = "coverage.xml"
 
-[tool.uv.sources]
-provide-foundry = { path = "../provide-foundry", editable = true }
+# [tool.uv.sources]
+# provide-foundry = { path = "../provide-foundry", editable = true }
+# Note: provide-foundry removed from local sources for CI compatibility
+# Will use PyPI version when available
 
 [tool.bandit]
 exclude_dirs = ["workenv", "tests", ".venv"]
