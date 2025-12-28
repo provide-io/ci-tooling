@@ -40,6 +40,9 @@ outputs:
   psp-path:
     description: 'Path to built .psp file'
     value: ${{ steps.build.outputs.psp-path }}
+  platform:
+    description: 'Detected platform (e.g., linux_amd64, darwin_arm64)'
+    value: ${{ steps.build.outputs.platform }}
 
 runs:
   using: 'composite'

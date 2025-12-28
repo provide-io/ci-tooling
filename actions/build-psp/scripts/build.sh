@@ -16,6 +16,22 @@ MANIFEST="${MANIFEST:-pyproject.toml}"
 STRIP="${STRIP:-false}"
 VERIFY="${VERIFY:-true}"
 
+# Detect platform
+OS_NAME=$(uname -s | tr '[:upper:]' '[:lower:]')
+ARCH=$(uname -m)
+case "${OS_NAME}" in
+    linux) PLATFORM_OS="linux" ;;
+    darwin) PLATFORM_OS="darwin" ;;
+    *) PLATFORM_OS="${OS_NAME}" ;;
+esac
+case "${ARCH}" in
+    x86_64|amd64) PLATFORM_ARCH="amd64" ;;
+    aarch64|arm64) PLATFORM_ARCH="arm64" ;;
+    *) PLATFORM_ARCH="${ARCH}" ;;
+esac
+PLATFORM="${PLATFORM_OS}_${PLATFORM_ARCH}"
+echo "::notice::Building for platform: ${PLATFORM}"
+
 # Build command
 CMD="flavor pack --manifest ${MANIFEST}"
 
@@ -66,4 +82,5 @@ else
 fi
 
 echo "psp-path=${PSP_PATH}" >> "${GITHUB_OUTPUT}"
-echo "::notice::Built PSP package: ${PSP_PATH}"
+echo "platform=${PLATFORM}" >> "${GITHUB_OUTPUT}"
+echo "::notice::Built PSP package: ${PSP_PATH} for ${PLATFORM}"
