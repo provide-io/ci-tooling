@@ -62,7 +62,7 @@ runs:
 
     - name: Install Flavorpack
       shell: bash
-      run: uv tool install flavorpack
+      run: uv pip install --system flavorpack
 
     - name: Build PSP
       id: build
