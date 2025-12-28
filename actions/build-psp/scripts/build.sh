@@ -46,7 +46,7 @@ else
     echo "::group::Generating temporary signing keys"
     mkdir -p keys
     flavor keygen --out-dir keys
-    CMD="${CMD} --private-key keys/private.key --public-key keys/public.key"
+    CMD="${CMD} --private-key keys/flavor-private.key --public-key keys/flavor-public.key"
     echo "::endgroup::"
 fi
 
