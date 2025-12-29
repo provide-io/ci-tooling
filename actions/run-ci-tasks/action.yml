@@ -1,0 +1,37 @@
+name: 'Run CI Tasks'
+description: 'Run CI using wrknv if available, otherwise manual commands'
+author: 'provide.io llc'
+
+inputs:
+  workenv-path:
+    description: 'Path to virtual environment'
+    required: false
+    default: '.venv'
+  fallback-quality:
+    description: 'Quality check command if no wrknv'
+    required: false
+    default: 'ruff check . && ruff format --check . && mypy src/'
+  fallback-test:
+    description: 'Test command if no wrknv'
+    required: false
+    default: 'pytest'
+  fallback-build:
+    description: 'Build command if no wrknv'
+    required: false
+    default: 'uv build'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run CI tasks
+      shell: bash
+      env:
+        WORKENV_PATH: ${{ inputs.workenv-path }}
+        FALLBACK_QUALITY: ${{ inputs.fallback-quality }}
+        FALLBACK_TEST: ${{ inputs.fallback-test }}
+        FALLBACK_BUILD: ${{ inputs.fallback-build }}
+      run: ${{ github.action_path }}/scripts/run.sh
+
+branding:
+  icon: 'check-circle'
+  color: 'green'
