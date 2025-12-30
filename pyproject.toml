@@ -1,71 +1,7 @@
-[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+# CI Tooling - GitHub Actions only (no Python package)
+# The Python CLI tools (conform, config-check) have been moved to wrknv.
 
-[project]
-name = "provide-cicd"
-dynamic = ["version"]
-description = "Shared CI/CD tooling for provide.io projects"
-readme = "README.md"
-requires-python = ">=3.11"
-license = "Apache-2.0"
-authors = [
-    { name = "Tim Perkins", email = "code@tim.life" },
-]
-maintainers = [
-    { name = "provide.io", email = "code@provide.io" },
-]
-keywords = ["ci", "cd", "github-actions", "pre-commit", "quality", "automation"]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Software Development :: Build Tools",
-    "Topic :: Software Development :: Quality Assurance",
-    "Topic :: Software Development :: Testing",
-    "Typing :: Typed",
-]
-dependencies = [
-    "provide-foundation",
-]
-
-[project.urls]
-Homepage = "https://github.com/provide-io/ci-tooling"
-Repository = "https://github.com/provide-io/ci-tooling"
-Issues = "https://github.com/provide-io/ci-tooling/issues"
-Documentation = "https://foundry.provide.io/cicd/"
-
-[project.optional-dependencies]
-hooks = [
-    "tomli; python_version < '3.11'",
-]
-
-[dependency-groups]
-dev = [
-    "provide-testkit[standard,build]",
-]
-docs = [
-    "provide-foundry",
-]
-
-[project.scripts]
-provide-conform = "provide.cicd.conform:main"
-provide-config-check = "provide.cicd.config_check:main"
-
-[tool.setuptools]
-packages = {find = {where = ["src"]}}
-
-[tool.setuptools.package-data]
-"provide.cicd" = ["py.typed", "footer_registry.json"]
-
-[tool.setuptools.dynamic]
-version = {file = "VERSION"}
-
-# ==============================================================================
-# Tool Configurations
-# ==============================================================================
+# This pyproject.toml is kept for tool configurations used by the examples/tests.
 
 [tool.ruff]
 line-length = 111
@@ -76,79 +12,8 @@ target-version = "py311"
 select = ["E", "F", "W", "I", "UP", "ANN", "B", "C90", "SIM", "PTH", "RUF"]
 ignore = ["ANN401", "B008", "E501"]
 
-[tool.ruff.lint.isort]
-known-first-party = ["provide", "tests"]
-force-sort-within-sections = true
-combine-as-imports = true
-
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
-
-[tool.mypy]
-python_version = "3.11"
-mypy_path = "src"
-strict = true
-pretty = true
-show_error_codes = true
-show_column_numbers = true
-warn_unused_ignores = true
-warn_unused_configs = true
-disallow_untyped_decorators = false
-
-[[tool.mypy.overrides]]
-module = ["structlog.*", "pytest.*"]
-ignore_missing_imports = true
-
-[tool.pytest.ini_options]
-log_cli = true
-log_cli_level = "DEBUG"
-asyncio_mode = "auto"
-testpaths = ["tests"]
-pythonpath = ["src", "."]
-python_files = ["test_*.py", "*_test.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-markers = [
-    "slow: marks tests as slow",
-    "integration: marks integration tests",
-    "unit: marks unit tests",
-]
-filterwarnings = [
-    "ignore::DeprecationWarning",
-    "ignore:Module already imported.*:pytest.PytestAssertRewriteWarning",
-]
-addopts = ""
-# Parallel execution: pytest -n <workers> (range: 2-16, recommend: CPU cores or 8, max: 16 to avoid xdist hang)
-
-[tool.coverage.run]
-source = ["src/provide/cicd"]
-branch = true
-parallel = true
-omit = ["*/tests/*", "*/__pycache__/*"]
-
-[tool.coverage.report]
-show_missing = true
-skip_covered = true
-fail_under = 80
-precision = 2
-exclude_lines = [
-    "pragma: no cover",
-    "raise NotImplementedError",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-    "def __repr__",
-    "def __str__",
-    "pass",
-]
-
-[tool.coverage.html]
-directory = "htmlcov"
-
-[tool.coverage.xml]
-output = "coverage.xml"
-
-[tool.bandit]
-exclude_dirs = ["workenv", "tests", ".venv"]
