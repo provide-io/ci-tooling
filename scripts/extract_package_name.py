@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Extract package name from built artifacts."""
 
-from pathlib import Path
 import re
 import sys
+from pathlib import Path
 
 
 def main() -> None:
