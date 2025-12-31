@@ -29,9 +29,8 @@ fi
 
 # Check for wrknv.toml
 if [[ -f "wrknv.toml" ]]; then
-    echo "::group::Installing wrknv from GitHub releases"
-    WRKNV_URL=$(curl -sL https://api.github.com/repos/provide-io/wrknv/releases/latest | jq -r '.assets[] | select(.name | endswith(".whl")) | .browser_download_url')
-    uv pip install "$WRKNV_URL"
+    echo "::group::Installing wrknv"
+    uv pip install "wrknv @ git+https://github.com/provide-io/wrknv.git@main"
     echo "::endgroup::"
 
     echo "::group::Running CI tasks with wrknv"
