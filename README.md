@@ -11,7 +11,9 @@ Shared GitHub Actions and reusable workflows for provide.io projects.
 - Project templates and scripts for consistent automation.
 
 ## Key Features
-Key features are highlighted in the sections below and in the documentation.
+- Shared composite actions for Python CI workflows.
+- Reusable workflows for standardized pipeline setups.
+- Project templates and scripts for consistent automation.
 
 ## 🚀 Quick Start
 
@@ -54,10 +56,13 @@ jobs:
 ```
 
 ## Documentation
-Documentation is currently captured in this README.
+- [Actions](./actions/)
+- [Workflows](./.github/workflows/)
+- [Templates](./templates/)
 
 ## Development
-Development notes are in [CLAUDE.md](CLAUDE.md).
+- See [CLAUDE.md](CLAUDE.md) for local development notes.
+- Run `./scripts/test-actions.sh` to validate actions locally.
 
 ## 🤝 Contributing
 
