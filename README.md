@@ -198,4 +198,4 @@ This repository uses semantic versioning:
 - 🐛 [Issue Tracker](https://github.com/provide-io/ci-tooling/issues)
 - 💬 [Discussions](https://github.com/provide-io/ci-tooling/discussions)
 
-Copyright (c) Provide.io LLC.
+Copyright (c) provide.io LLC.
