@@ -88,7 +88,7 @@ jobs:
       - name: 📦 Install Dependencies
         run: |
           # Now can access private repos from configured organizations
-          pip install git+https://github.com/my-org/private-package.git
+          uv add git+https://github.com/my-org/private-package.git
 ```
 
 ## Token Requirements
