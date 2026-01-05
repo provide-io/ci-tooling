@@ -151,7 +151,7 @@ jobs:
       - name: Install UV
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - name: Install deps
-        run: uv pip install -e ".[dev]"
+        run: uv sync --group dev
       - name: Run ruff
         run: ruff check src/
       - name: Run tests
