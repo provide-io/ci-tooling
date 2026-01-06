@@ -90,13 +90,13 @@ runs:
           echo "📦 Installing from pyproject.toml"
           if [ -n "${{ inputs.install-extras }}" ]; then
             echo "🔧 Installing with extras: ${{ inputs.install-extras }}"
-            uv pip install -e "${{ inputs.project-path }}[${{ inputs.install-extras }}]"
+            uv sync --project "${{ inputs.project-path }}" --extra "${{ inputs.install-extras }}"
           else
-            uv pip install -e "${{ inputs.project-path }}"
+            uv sync --project "${{ inputs.project-path }}"
           fi
         elif [ -f "${{ inputs.project-path }}/requirements.txt" ]; then
-          echo "📦 Installing from requirements.txt"
-          uv pip install -r "${{ inputs.project-path }}/requirements.txt"
+          echo "⚠️ requirements.txt installs are not supported in uv-only mode"
+          echo "   Please migrate to pyproject.toml for dependency management"
         else
           echo "⚠️ No pyproject.toml or requirements.txt found, skipping dependency installation"
         fi
@@ -110,7 +110,7 @@ runs:
         echo "- **Python version:** $(python --version)" >> $GITHUB_STEP_SUMMARY
         echo "- **UV version:** $(uv --version)" >> $GITHUB_STEP_SUMMARY
         echo "- **Workenv path:** ${{ inputs.workenv-path }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Pip packages:** $(pip list --format=freeze | wc -l) installed" >> $GITHUB_STEP_SUMMARY
+        echo "- **Installed packages:** $(python -c \"import importlib.metadata as m; print(len(list(m.distributions())))\")" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
 
 branding:
