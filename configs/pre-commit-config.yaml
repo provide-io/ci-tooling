@@ -2,7 +2,7 @@
 # This file should be copied to .pre-commit-config.yaml in your project root
 #
 # Installation:
-#   pip install pre-commit
+#   uv tool install pre-commit
 #   pre-commit install
 #
 # Usage:
