@@ -35,6 +35,14 @@ on:
         description: 'Test on TestPyPI first'
         type: boolean
         default: false
+      publish-testpypi:
+        description: 'Actually publish to TestPyPI (release gate - requires manual approval)'
+        type: boolean
+        default: false
+      publish-pypi:
+        description: 'Actually publish to PyPI (release gate - requires manual approval)'
+        type: boolean
+        default: false
     secrets:
       PYPI_TOKEN:
         description: 'PyPI API token'
@@ -111,12 +119,52 @@ jobs:
           retention-days: 30
 
   # ==================================================================================
+  # 🚧 Release Gate Status
+  # ==================================================================================
+  gate-status:
+    name: 🚧 Release Gate
+    needs: [build]
+    if: always() && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📋 Report Gate Status
+        run: |
+          echo "## 🚧 Release Gate Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Build completed successfully. Publishing is gated by default." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Target | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ inputs.publish-testpypi }}" != "true" ]; then
+            echo "| TestPyPI | ⏸️ **Gated** (re-run with \`publish-testpypi: true\`) |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| TestPyPI | ✅ Enabled |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ inputs.publish-pypi }}" != "true" ]; then
+            echo "| PyPI | ⏸️ **Gated** (re-run with \`publish-pypi: true\`) |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| PyPI | ✅ Enabled |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### How to Publish" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Re-run this workflow with the publish flags enabled:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`yaml" >> $GITHUB_STEP_SUMMARY
+          echo "with:" >> $GITHUB_STEP_SUMMARY
+          echo "  publish-testpypi: true  # Optional: publish to TestPyPI first" >> $GITHUB_STEP_SUMMARY
+          echo "  publish-pypi: true      # Publish to PyPI" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # ==================================================================================
   # 🧪 Test Release (TestPyPI)
   # ==================================================================================
   test-release:
     name: 🧪 Test Release
     needs: build
-    if: inputs.test-repository && secrets.TEST_PYPI_TOKEN != ''
+    if: inputs.test-repository && inputs.publish-testpypi
     runs-on: ubuntu-latest
     environment: testpypi
     steps:
@@ -185,7 +233,11 @@ jobs:
   release:
     name: 🚀 Production Release
     needs: [build, test-release]
-    if: always() && needs.build.result == 'success' && (needs.test-release.result == 'success' || !inputs.test-repository)
+    if: >-
+      always() &&
+      needs.build.result == 'success' &&
+      inputs.publish-pypi &&
+      (needs.test-release.result == 'success' || !inputs.test-repository || !inputs.publish-testpypi)
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
