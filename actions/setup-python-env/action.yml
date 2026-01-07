@@ -110,7 +110,8 @@ runs:
         echo "- **Python version:** $(python --version)" >> $GITHUB_STEP_SUMMARY
         echo "- **UV version:** $(uv --version)" >> $GITHUB_STEP_SUMMARY
         echo "- **Workenv path:** ${{ inputs.workenv-path }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Installed packages:** $(python -c \"import importlib.metadata as m; print(len(list(m.distributions())))\")" >> $GITHUB_STEP_SUMMARY
+        PKG_COUNT=$(python -c 'import importlib.metadata as m; print(len(list(m.distributions())))')
+        echo "- **Installed packages:** $PKG_COUNT" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
 
 branding:
