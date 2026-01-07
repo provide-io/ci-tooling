@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: MIT
-
 name: 'Python Build'
 description: 'Build Python package'
 author: 'provide.io llc'
@@ -17,8 +14,13 @@ runs:
     - name: 📦 Build Package
       shell: bash
       run: |
-        echo "📦 Building package"
-        uv build
+        source ./workenv/bin/activate
+        if [ "${{ inputs.build-backend }}" = "uv" ]; then
+          uv build
+        else
+          pip install build
+          python -m build
+        fi
 
     - name: 📋 Build Summary
       shell: bash
