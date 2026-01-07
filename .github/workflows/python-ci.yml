@@ -24,7 +24,11 @@ on:
         type: number
         default: 80
       run-security:
-        description: 'Run security scanning'
+        description: 'Run security scanning (bandit)'
+        type: boolean
+        default: true
+      run-secret-scan:
+        description: 'Run secret scanning (TruffleHog, Gitleaks)'
         type: boolean
         default: true
       run-performance:
@@ -146,6 +150,32 @@ jobs:
           sarif_file: security-results.sarif
 
   # ==================================================================================
+  # 🔐 Secret Scanning
+  # ==================================================================================
+  secret-scan:
+    name: 🔐 Secret Scan
+    needs: quality
+    if: inputs.run-secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for secret scanning
+
+      - name: 🔐 TruffleHog Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+        continue-on-error: true
+
+      - name: 🔐 Gitleaks Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  # ==================================================================================
   # 🚀 Performance Tests
   # ==================================================================================
   performance:
@@ -195,7 +225,7 @@ jobs:
   # ==================================================================================
   summary:
     name: 📋 CI Summary
-    needs: [quality, test, security, performance]
+    needs: [quality, test, security, secret-scan, performance]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -211,6 +241,10 @@ jobs:
 
           if [ "${{ inputs.run-security }}" = "true" ]; then
             echo "| Security | ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ inputs.run-secret-scan }}" = "true" ]; then
+            echo "| Secret Scan | ${{ needs.secret-scan.result == 'success' && '✅ Passed' || '⚠️ Issues' }} |" >> $GITHUB_STEP_SUMMARY
           fi
 
           if [ "${{ inputs.run-performance }}" = "true" ]; then
