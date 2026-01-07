@@ -47,6 +47,10 @@ on:
         description: 'Fail fast in matrix builds'
         type: boolean
         default: false
+      upload-coverage:
+        description: 'Upload coverage to Codecov'
+        type: boolean
+        default: false
     secrets:
       CODECOV_TOKEN:
         description: 'Codecov token for coverage upload'
@@ -106,10 +110,10 @@ jobs:
         with:
           test-directory: ${{ inputs.test-directory }}
           coverage-threshold: ${{ inputs.coverage-threshold }}
-          upload-coverage: ${{ secrets.CODECOV_TOKEN != '' }}
+          upload-coverage: ${{ inputs.upload-coverage }}
 
       - name: 📤 Upload Coverage
-        if: secrets.CODECOV_TOKEN != ''
+        if: inputs.upload-coverage
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
