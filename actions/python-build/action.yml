@@ -14,13 +14,8 @@ runs:
     - name: 📦 Build Package
       shell: bash
       run: |
-        source ./workenv/bin/activate
-        if [ "${{ inputs.build-backend }}" = "uv" ]; then
-          uv build
-        else
-          pip install build
-          python -m build
-        fi
+        echo "📦 Building package"
+        uv build
 
     - name: 📋 Build Summary
       shell: bash
