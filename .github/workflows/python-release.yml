@@ -50,9 +50,6 @@ on:
       TEST_PYPI_TOKEN:
         description: 'TestPyPI API token'
         required: false
-      GITHUB_TOKEN:
-        description: 'GitHub token'
-        required: false
 
 env:
   FORCE_COLOR: "1"
