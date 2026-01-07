@@ -57,7 +57,8 @@ on:
         required: false
 
 env:
-  FORCE_COLOR: "1"
+  # NOTE: Do NOT set FORCE_COLOR=1 here - it breaks pytest-xdist's execnet
+  # subprocess communication which expects plain output during bootstrap
   UV_SYSTEM_PYTHON: "1"
 
 jobs:
