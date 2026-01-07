@@ -123,7 +123,9 @@ jobs:
       # act cannot evaluate workflow_call boolean expressions here.
       fail-fast: false
       matrix:
+        os: ${{ fromJson(format('["{0}"]', inputs.os-matrix)) }}
         python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+    runs-on: ${{ matrix.os }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
