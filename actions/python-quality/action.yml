@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: MIT
-
 name: 'Python Quality Checks'
 description: 'Run code quality checks (ruff format, ruff lint, mypy)'
 author: 'provide.io llc'
@@ -15,7 +12,7 @@ runs:
   using: 'composite'
   steps:
     - name: 📥 Checkout ci-tooling
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      uses: actions/checkout@v4
       with:
         repository: provide-io/ci-tooling
         ref: main
@@ -24,20 +21,20 @@ runs:
     - name: 🎨 Check formatting with Ruff
       shell: bash
       run: |
-        echo "🎨 Running Ruff format check on: ${{ inputs.source-paths }}"
-        .venv/bin/ruff format --check ${{ inputs.source-paths }}
+        source ./workenv/bin/activate
+        .ci-tooling/scripts/quality/run-ruff-format.sh "${{ inputs.source-paths }}" true
 
     - name: 🔍 Lint with Ruff
       shell: bash
       run: |
-        echo "🔍 Running Ruff lint on: ${{ inputs.source-paths }}"
-        .venv/bin/ruff check ${{ inputs.source-paths }}
+        source ./workenv/bin/activate
+        .ci-tooling/scripts/quality/run-ruff-lint.sh "${{ inputs.source-paths }}" false
 
     - name: 🔒 Type check with MyPy
       shell: bash
       run: |
-        echo "🔒 Running MyPy type check"
-        .venv/bin/mypy src/ || true
+        source ./workenv/bin/activate
+        .ci-tooling/scripts/quality/run-mypy.sh src/ false || true
 
 branding:
   icon: 'check-circle'

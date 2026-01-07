@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: MIT
-
 name: 'Python Tests'
 description: 'Run pytest with coverage'
 author: 'provide.io llc'
@@ -13,7 +10,7 @@ inputs:
   coverage-threshold:
     description: 'Coverage threshold percentage'
     required: false
-    default: '0'
+    default: '80'
   parallel:
     description: 'Run tests in parallel'
     required: false
@@ -23,7 +20,7 @@ runs:
   using: 'composite'
   steps:
     - name: 📥 Checkout ci-tooling
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      uses: actions/checkout@v4
       with:
         repository: provide-io/ci-tooling
         ref: main
@@ -32,12 +29,8 @@ runs:
     - name: 🧪 Run Tests
       shell: bash
       run: |
-        echo "🧪 Running pytest on: ${{ inputs.test-directory }}"
-        PYTEST_ARGS="${{ inputs.test-directory }} --cov --cov-report=xml --cov-report=term -v --cov-fail-under=${{ inputs.coverage-threshold }}"
-        if [ "${{ inputs.parallel }}" = "true" ]; then
-          PYTEST_ARGS="$PYTEST_ARGS -n auto"
-        fi
-        .venv/bin/pytest $PYTEST_ARGS
+        source ./workenv/bin/activate
+        .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel }}
 
 branding:
   icon: 'check-square'
