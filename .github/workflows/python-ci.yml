@@ -267,7 +267,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           version: ${{ inputs.uv-version }}
-          enable-cache: true
+          enable-cache: false  # Build doesn't need cache, just runs uv build
 
       - name: 📦 Build Package
         run: uv build
