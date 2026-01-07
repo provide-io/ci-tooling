@@ -55,6 +55,10 @@ on:
         description: 'Upload coverage to Codecov'
         type: boolean
         default: false
+      parallel-testing:
+        description: 'Enable parallel test execution with pytest-xdist (may break with some pytest plugins)'
+        type: boolean
+        default: true
     secrets:
       CODECOV_TOKEN:
         description: 'Codecov token for coverage upload'
@@ -154,7 +158,7 @@ jobs:
       - name: 🧪 Run Tests
         run: |
           source .venv/bin/activate
-          .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} true
+          .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel-testing }}
 
       - name: 📤 Upload Coverage
         if: inputs.upload-coverage
