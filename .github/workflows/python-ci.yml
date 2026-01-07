@@ -55,10 +55,6 @@ on:
         description: 'Upload coverage to Codecov'
         type: boolean
         default: false
-      parallel-testing:
-        description: 'Enable parallel test execution with pytest-xdist (may break with some pytest plugins)'
-        type: boolean
-        default: true
     secrets:
       CODECOV_TOKEN:
         description: 'Codecov token for coverage upload'
@@ -154,13 +150,15 @@ jobs:
         run: uv sync --group dev
 
       - name: 🧪 Run Tests
-        run: |
-          source .venv/bin/activate
-          .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel-testing }}
+        uses: provide-io/ci-tooling/actions/python-test@v0
+        with:
+          test-directory: ${{ inputs.test-directory }}
+          coverage-threshold: ${{ inputs.coverage-threshold }}
+          upload-coverage: ${{ inputs.upload-coverage }}
 
       - name: 📤 Upload Coverage
-        if: inputs.upload-coverage && github.actor != 'nektos/act'
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2  # v6.0.0
+        if: inputs.upload-coverage
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
