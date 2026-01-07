@@ -173,6 +173,13 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
@@ -193,20 +200,21 @@ jobs:
       - name: 🔒 Run Bandit security scan
         run: |
           source .venv/bin/activate
-          bandit -r src/ -f json -o bandit-report.json || true
-          bandit -r src/ -ll
+          .ci-tooling/scripts/security/run-bandit.sh src/ bandit-report.json -ll
 
       - name: 🔍 Check for known vulnerabilities
         run: |
           source .venv/bin/activate
-          pip-audit || true
+          .ci-tooling/scripts/security/run-pip-audit.sh pip-audit-report.json
 
       - name: 📤 Upload security reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: security-reports
-          path: bandit-report.json
+          path: |
+            bandit-report.json
+            pip-audit-report.json
 
   # ==================================================================================
   # 🔐 Secret Scanning
