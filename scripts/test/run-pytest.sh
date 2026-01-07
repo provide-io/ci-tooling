@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: MIT
-
 # Run pytest with coverage
 set -euo pipefail
 
@@ -11,11 +8,14 @@ PARALLEL="${3:-true}"
 
 echo "🧪 Running pytest on: $TEST_DIR"
 
-# Always set --cov-fail-under to override any pyproject.toml setting
-PYTEST_ARGS="$TEST_DIR --cov --cov-report=xml --cov-report=term -v --cov-fail-under=$COV_THRESHOLD"
+PYTEST_ARGS="$TEST_DIR --cov --cov-report=xml --cov-report=term -v"
 
 if [ "$PARALLEL" = "true" ]; then
     PYTEST_ARGS="$PYTEST_ARGS -n auto"
+fi
+
+if [ "$COV_THRESHOLD" != "0" ]; then
+    PYTEST_ARGS="$PYTEST_ARGS --cov-fail-under=$COV_THRESHOLD"
 fi
 
 pytest $PYTEST_ARGS
