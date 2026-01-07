@@ -92,8 +92,7 @@ jobs:
       fail-fast: ${{ inputs.fail-fast }}
       matrix:
         os: ${{ fromJson(format('["{0}"]', inputs.os-matrix)) }}
-        python-version:
-          - ${{ inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version) }}
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
     runs-on: ${{ matrix.os }}
     steps:
       - name: 📥 Checkout
