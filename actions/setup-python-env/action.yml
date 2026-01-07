@@ -69,6 +69,7 @@ runs:
         echo "path=$WORKENV_PATH" >> $GITHUB_OUTPUT
         echo "$WORKENV_PATH/bin" >> $GITHUB_PATH
 
+    # CACHE_VERSION: Increment to invalidate all caches (v2: include uv.lock in key)
     - name: 🔑 Setup dependency cache
       id: cache
       if: inputs.cache-dependencies == 'true'
@@ -77,9 +78,9 @@ runs:
         path: |
           ~/.cache/uv
           ${{ inputs.workenv-path }}
-        key: uv-${{ runner.os }}-python${{ inputs.python-version }}-${{ hashFiles('**/uv.lock', '**/pyproject.toml', '**/requirements*.txt') }}
+        key: uv-v2-${{ runner.os }}-python${{ inputs.python-version }}-${{ hashFiles('**/uv.lock', '**/pyproject.toml', '**/requirements*.txt') }}
         restore-keys: |
-          uv-${{ runner.os }}-python${{ inputs.python-version }}-
+          uv-v2-${{ runner.os }}-python${{ inputs.python-version }}-
 
     - name: 📥 Install project dependencies
       shell: bash
