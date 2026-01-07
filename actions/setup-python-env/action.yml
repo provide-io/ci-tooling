@@ -19,8 +19,8 @@ inputs:
     description: 'Enable dependency caching'
     required: false
     default: 'true'
-  install-extras:
-    description: 'Package extras to install (comma-separated)'
+  install-group:
+    description: 'Dependency group to install (e.g., dev, docs)'
     required: false
     default: 'dev'
   project-path:
@@ -88,9 +88,9 @@ runs:
         # Check if pyproject.toml exists
         if [ -f "${{ inputs.project-path }}/pyproject.toml" ]; then
           echo "📦 Installing from pyproject.toml"
-          if [ -n "${{ inputs.install-extras }}" ]; then
-            echo "🔧 Installing with extras: ${{ inputs.install-extras }}"
-            uv sync --project "${{ inputs.project-path }}" --extra "${{ inputs.install-extras }}"
+          if [ -n "${{ inputs.install-group }}" ]; then
+            echo "🔧 Installing with group: ${{ inputs.install-group }}"
+            uv sync --project "${{ inputs.project-path }}" --group "${{ inputs.install-group }}"
           else
             uv sync --project "${{ inputs.project-path }}"
           fi
