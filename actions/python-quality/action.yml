@@ -22,19 +22,19 @@ runs:
       shell: bash
       run: |
         echo "🎨 Running Ruff format check on: ${{ inputs.source-paths }}"
-        ./workenv/bin/ruff format --check ${{ inputs.source-paths }}
+        .venv/bin/ruff format --check ${{ inputs.source-paths }}
 
     - name: 🔍 Lint with Ruff
       shell: bash
       run: |
         echo "🔍 Running Ruff lint on: ${{ inputs.source-paths }}"
-        ./workenv/bin/ruff check ${{ inputs.source-paths }}
+        .venv/bin/ruff check ${{ inputs.source-paths }}
 
     - name: 🔒 Type check with MyPy
       shell: bash
       run: |
         echo "🔒 Running MyPy type check"
-        ./workenv/bin/mypy src/ || true
+        .venv/bin/mypy src/ || true
 
 branding:
   icon: 'check-circle'
