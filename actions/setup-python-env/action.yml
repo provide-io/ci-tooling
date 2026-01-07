@@ -95,7 +95,7 @@ runs:
           echo "📦 Installing from pyproject.toml"
           if [ -n "${{ inputs.install-group }}" ]; then
             echo "🔧 Installing with group: ${{ inputs.install-group }}"
-            uv sync --active --project "${{ inputs.project-path }}" --group "${{ inputs.install-group }}"
+            uv sync --project "${{ inputs.project-path }}" --group "${{ inputs.install-group }}"
           else
             uv sync --active --project "${{ inputs.project-path }}"
           fi
