@@ -29,8 +29,12 @@ runs:
     - name: 🧪 Run Tests
       shell: bash
       run: |
-        source ./workenv/bin/activate
-        .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel }}
+        echo "🧪 Running pytest on: ${{ inputs.test-directory }}"
+        PYTEST_ARGS="${{ inputs.test-directory }} --cov --cov-report=xml --cov-report=term -v --cov-fail-under=${{ inputs.coverage-threshold }}"
+        if [ "${{ inputs.parallel }}" = "true" ]; then
+          PYTEST_ARGS="$PYTEST_ARGS -n auto"
+        fi
+        ./workenv/bin/pytest $PYTEST_ARGS
 
 branding:
   icon: 'check-square'

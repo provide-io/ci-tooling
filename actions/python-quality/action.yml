@@ -21,20 +21,20 @@ runs:
     - name: 🎨 Check formatting with Ruff
       shell: bash
       run: |
-        source ./workenv/bin/activate
-        .ci-tooling/scripts/quality/run-ruff-format.sh "${{ inputs.source-paths }}" true
+        echo "🎨 Running Ruff format check on: ${{ inputs.source-paths }}"
+        ./workenv/bin/ruff format --check ${{ inputs.source-paths }}
 
     - name: 🔍 Lint with Ruff
       shell: bash
       run: |
-        source ./workenv/bin/activate
-        .ci-tooling/scripts/quality/run-ruff-lint.sh "${{ inputs.source-paths }}" false
+        echo "🔍 Running Ruff lint on: ${{ inputs.source-paths }}"
+        ./workenv/bin/ruff check ${{ inputs.source-paths }}
 
     - name: 🔒 Type check with MyPy
       shell: bash
       run: |
-        source ./workenv/bin/activate
-        .ci-tooling/scripts/quality/run-mypy.sh src/ false || true
+        echo "🔒 Running MyPy type check"
+        ./workenv/bin/mypy src/ || true
 
 branding:
   icon: 'check-circle'
