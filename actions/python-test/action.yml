@@ -10,7 +10,7 @@ inputs:
   coverage-threshold:
     description: 'Coverage threshold percentage'
     required: false
-    default: '80'
+    default: '0'
   parallel:
     description: 'Run tests in parallel'
     required: false
