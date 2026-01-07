@@ -45,10 +45,10 @@ on:
         default: false
     secrets:
       PYPI_TOKEN:
-        description: 'PyPI API token'
-        required: true
+        description: 'PyPI API token (required only if publish-pypi is true)'
+        required: false
       TEST_PYPI_TOKEN:
-        description: 'TestPyPI API token'
+        description: 'TestPyPI API token (required only if publish-testpypi is true)'
         required: false
 
 env:
