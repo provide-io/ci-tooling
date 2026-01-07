@@ -77,7 +77,6 @@ jobs:
         uses: provide-io/ci-tooling/actions/python-test@main
         with:
           coverage-threshold: 0
-          parallel: ${{ inputs.parallel-tests }}
 
   # ==================================================================================
   # 🏗️ Build Package
