@@ -12,9 +12,9 @@ inputs:
     required: false
     default: '0.7.8'
   workenv-path:
-    description: 'Path to create workenv directory'
+    description: 'Path to virtual environment directory'
     required: false
-    default: './workenv'
+    default: '.venv'
   cache-dependencies:
     description: 'Enable dependency caching'
     required: false

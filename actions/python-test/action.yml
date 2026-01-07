@@ -34,7 +34,7 @@ runs:
         if [ "${{ inputs.parallel }}" = "true" ]; then
           PYTEST_ARGS="$PYTEST_ARGS -n auto"
         fi
-        ./workenv/bin/pytest $PYTEST_ARGS
+        .venv/bin/pytest $PYTEST_ARGS
 
 branding:
   icon: 'check-square'
