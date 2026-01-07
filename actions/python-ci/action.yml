@@ -126,6 +126,30 @@ runs:
           echo "⚠️ Bandit not available, skipping security scan"
         fi
 
+        # Run TruffleHog if available
+        if command -v trufflehog >/dev/null 2>&1; then
+          echo "🔍 Running TruffleHog secret scan..."
+          TRUFFLEHOG_ARGS="git file://. --fail"
+          if [ -f ".trufflehog-exclude-paths.txt" ]; then
+            TRUFFLEHOG_ARGS="$TRUFFLEHOG_ARGS --exclude-paths=.trufflehog-exclude-paths.txt"
+          fi
+          trufflehog $TRUFFLEHOG_ARGS || echo "⚠️ TruffleHog found potential secrets"
+        else
+          echo "ℹ️ TruffleHog not available, skipping secret scan"
+        fi
+
+        # Run Gitleaks if available
+        if command -v gitleaks >/dev/null 2>&1; then
+          echo "🔍 Running Gitleaks secret scan..."
+          GITLEAKS_ARGS="git ."
+          if [ -f ".gitleaks.toml" ]; then
+            GITLEAKS_ARGS="$GITLEAKS_ARGS --config=.gitleaks.toml"
+          fi
+          gitleaks $GITLEAKS_ARGS || echo "⚠️ Gitleaks found potential secrets"
+        else
+          echo "ℹ️ Gitleaks not available, skipping secret scan"
+        fi
+
         echo "✅ Security scan completed"
 
     - name: 🧪 Run Tests
