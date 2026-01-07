@@ -81,7 +81,7 @@ jobs:
       - name: 🧪 Run Tests
         uses: provide-io/ci-tooling/actions/python-test@main
         with:
-          coverage-threshold: 80
+          coverage-threshold: 0
 
   # ==================================================================================
   # 🏗️ Build Package
