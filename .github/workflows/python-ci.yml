@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: MIT
-
 name: '⚙️ Continuous Integration'
 
 on:
@@ -486,11 +483,40 @@ jobs:
           path: dist/
 
   # ==================================================================================
+  # 📦 Build Package
+  # ==================================================================================
+  build:
+    name: 📦 Build
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python Environment
+        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+        with:
+          python-version: ${{ inputs.python-version }}
+          uv-version: ${{ inputs.uv-version }}
+
+      - name: 📦 Build Package
+        shell: bash
+        run: |
+          source ./workenv/bin/activate
+          uv build
+
+      - name: 📤 Upload Dist Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  # ==================================================================================
   # 📋 CI Summary
   # ==================================================================================
   summary:
     name: 📋 CI Summary
-    needs: [quality, test, test-linux-arm, test-macos-arm, test-macos-intel, test-windows, test-windows-arm, security, secret-scan, build]
+    needs: [quality, test, security, secret-scan, performance, build]
     if: always()
     runs-on: ubuntu-24.04
     steps:
@@ -503,17 +529,8 @@ jobs:
           echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Quality | ${{ needs.quality.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests (linux_amd64) | ${{ needs.test.result == 'success' && '✅ Passed' || (needs.test.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests (linux_arm64) | ${{ needs.test-linux-arm.result == 'success' && '✅ Passed' || (needs.test-linux-arm.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests (darwin_arm64) | ${{ needs.test-macos-arm.result == 'success' && '✅ Passed' || (needs.test-macos-arm.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests (darwin_amd64) | ${{ needs.test-macos-intel.result == 'success' && '✅ Passed' || (needs.test-macos-intel.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
-
-          if [ "${{ inputs.platform-preset }}" = "full" ] || [ "${{ inputs.include-windows }}" = "true" ]; then
-            echo "| Tests (windows_amd64) | ${{ needs.test-windows.result == 'success' && '✅ Passed' || (needs.test-windows.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Tests (windows_arm64) | ${{ needs.test-windows-arm.result == 'success' && '✅ Passed' || (needs.test-windows-arm.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || (needs.build.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ inputs.run-security }}" = "true" ]; then
             echo "| Security | ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
@@ -526,6 +543,12 @@ jobs:
           # Overall status
           OVERALL="✅ Success"
           if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.build.result }}" != "success" ]; then
+            OVERALL="❌ Failed"
+          fi
+          if [ "${{ inputs.run-security }}" = "true" ] && [ "${{ needs.security.result }}" != "success" ]; then
+            OVERALL="❌ Failed"
+          fi
+          if [ "${{ inputs.run-performance }}" = "true" ] && [ "${{ needs.performance.result }}" != "success" ]; then
             OVERALL="❌ Failed"
           fi
 
