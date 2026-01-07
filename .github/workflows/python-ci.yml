@@ -1,4 +1,4 @@
-name: 'Reusable Python CI'
+name: '⚙️ Continuous Integration'
 
 on:
   workflow_call:
@@ -221,11 +221,40 @@ jobs:
           retention-days: 30
 
   # ==================================================================================
+  # 📦 Build Package
+  # ==================================================================================
+  build:
+    name: 📦 Build
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python Environment
+        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+        with:
+          python-version: ${{ inputs.python-version }}
+          uv-version: ${{ inputs.uv-version }}
+
+      - name: 📦 Build Package
+        shell: bash
+        run: |
+          source ./workenv/bin/activate
+          uv build
+
+      - name: 📤 Upload Dist Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  # ==================================================================================
   # 📋 CI Summary
   # ==================================================================================
   summary:
     name: 📋 CI Summary
-    needs: [quality, test, security, secret-scan, performance]
+    needs: [quality, test, security, secret-scan, performance, build]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -238,6 +267,7 @@ jobs:
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Quality | ${{ needs.quality.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Tests | ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ inputs.run-security }}" = "true" ]; then
             echo "| Security | ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
@@ -253,7 +283,7 @@ jobs:
 
           # Overall status
           OVERALL="✅ Success"
-          if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ]; then
+          if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.build.result }}" != "success" ]; then
             OVERALL="❌ Failed"
           fi
           if [ "${{ inputs.run-security }}" = "true" ] && [ "${{ needs.security.result }}" != "success" ]; then
