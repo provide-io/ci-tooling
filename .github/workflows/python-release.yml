@@ -121,19 +121,85 @@ jobs:
           retention-days: 30
 
   # ==================================================================================
-  # 🚧 Release Gate Status
+  # 🏷️ Create GitHub Release
   # ==================================================================================
-  gate-status:
-    name: 🚧 Release Gate
+  github-release:
+    name: 🏷️ GitHub Release
     needs: [build]
     if: always() && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist/
+
+      - name: 📋 Get Version Info
+        id: version
+        shell: bash
+        run: |
+          WHEEL_FILE=$(ls dist/*.whl | head -1 2>/dev/null || echo "")
+          if [ -n "$WHEEL_FILE" ]; then
+            PACKAGE_INFO=$(python3 -c 'import re,sys,os; f=os.path.basename(sys.argv[1]); m=re.match(r"^([^-]+)-([^-]+)", f); print(f"{m.group(1)} {m.group(2)}" if m else "unknown 0.0.0")' "$WHEEL_FILE")
+            PACKAGE_NAME=$(echo "$PACKAGE_INFO" | cut -d' ' -f1)
+            PACKAGE_VERSION=$(echo "$PACKAGE_INFO" | cut -d' ' -f2)
+          else
+            PACKAGE_NAME="unknown"
+            PACKAGE_VERSION="0.0.0"
+          fi
+          echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+          echo "package_version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Package: $PACKAGE_NAME v$PACKAGE_VERSION"
+
+      - name: 🏷️ Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.package_version }}
+          name: v${{ steps.version.outputs.package_version }}
+          files: dist/*
+          generate_release_notes: true
+          prerelease: ${{ inputs.prerelease }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📊 Release Summary
+        shell: bash
+        run: |
+          echo "## 🏷️ GitHub Release Created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Package:** ${{ steps.version.outputs.package_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.package_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ls -la dist/ >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.package_version }})" >> $GITHUB_STEP_SUMMARY
+
+  # ==================================================================================
+  # 🚧 PyPI Publishing Gate
+  # ==================================================================================
+  publishing-gate:
+    name: 🚧 Publishing Gate
+    needs: [github-release]
+    if: always() && needs.github-release.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: 📋 Report Gate Status
         run: |
-          echo "## 🚧 Release Gate Status" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚧 PyPI Publishing Gate" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Build completed successfully. Publishing is gated by default." >> $GITHUB_STEP_SUMMARY
+          echo "GitHub Release created successfully. PyPI publishing is gated by default." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Target | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
@@ -151,7 +217,7 @@ jobs:
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### How to Publish" >> $GITHUB_STEP_SUMMARY
+          echo "### How to Publish to PyPI" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Re-run this workflow with the publish flags enabled:" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`yaml" >> $GITHUB_STEP_SUMMARY
