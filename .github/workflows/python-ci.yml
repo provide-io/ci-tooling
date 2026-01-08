@@ -1,4 +1,4 @@
-name: 'Reusable Python CI'
+name: '⚙️ Continuous Integration'
 
 on:
   workflow_call:
@@ -47,6 +47,10 @@ on:
         description: 'Fail fast in matrix builds'
         type: boolean
         default: false
+      upload-coverage:
+        description: 'Upload coverage to Codecov'
+        type: boolean
+        default: false
     secrets:
       CODECOV_TOKEN:
         description: 'Codecov token for coverage upload'
@@ -67,16 +71,41 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python Environment
-        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
-          uv-version: ${{ inputs.uv-version }}
 
-      - name: 🎨 Run Quality Checks
-        uses: provide-io/ci-tooling/actions/python-quality@v0
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
         with:
-          source-paths: ${{ inputs.source-paths }}
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: uv sync --group dev
+
+      - name: 🎨 Check formatting with Ruff
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/quality/run-ruff-format.sh "${{ inputs.source-paths }}" true
+
+      - name: 🔍 Lint with Ruff
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/quality/run-ruff-lint.sh "${{ inputs.source-paths }}" false
+
+      - name: 🔒 Type check with MyPy
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/quality/run-mypy.sh src/ false || true
 
   # ==================================================================================
   # 🧪 Tests
@@ -88,28 +117,40 @@ jobs:
       fail-fast: ${{ inputs.fail-fast }}
       matrix:
         os: ${{ fromJson(format('["{0}"]', inputs.os-matrix)) }}
-        python-version:
-          - ${{ inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version) }}
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
     runs-on: ${{ matrix.os }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python Environment
-        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          uv-version: ${{ inputs.uv-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: uv sync --group dev
 
       - name: 🧪 Run Tests
-        uses: provide-io/ci-tooling/actions/python-test@v0
-        with:
-          test-directory: ${{ inputs.test-directory }}
-          coverage-threshold: ${{ inputs.coverage-threshold }}
-          upload-coverage: ${{ secrets.CODECOV_TOKEN != '' }}
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" 0 true
 
       - name: 📤 Upload Coverage
-        if: secrets.CODECOV_TOKEN != ''
+        if: inputs.upload-coverage
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -132,22 +173,48 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python Environment
-        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
-          uv-version: ${{ inputs.uv-version }}
 
-      - name: 🔒 Security Scan
-        uses: provide-io/ci-tooling/actions/python-security@v0
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
         with:
-          source-paths: ${{ inputs.source-paths }}
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
 
-      - name: 📤 Upload SARIF results
+      - name: 📦 Install dependencies
+        run: |
+          uv sync --group dev
+          source .venv/bin/activate
+          uv pip install bandit pip-audit
+
+      - name: 🔒 Run Bandit security scan
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/security/run-bandit.sh src/ bandit-report.json -ll
+
+      - name: 🔍 Check for known vulnerabilities
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/security/run-pip-audit.sh pip-audit-report.json
+
+      - name: 📤 Upload security reports
+        uses: actions/upload-artifact@v4
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: security-results.sarif
+          name: security-reports
+          path: |
+            bandit-report.json
+            pip-audit-report.json
 
   # ==================================================================================
   # 🔐 Secret Scanning
@@ -161,7 +228,7 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for secret scanning
+          fetch-depth: 0
 
       - name: 🔐 TruffleHog Scan
         uses: trufflesecurity/trufflehog@main
@@ -176,61 +243,46 @@ jobs:
         continue-on-error: true
 
   # ==================================================================================
-  # 🚀 Performance Tests
+  # 📦 Build Package
   # ==================================================================================
-  performance:
-    name: 🚀 Performance
+  build:
+    name: 📦 Build
     needs: test
-    if: inputs.run-performance
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python Environment
-        uses: provide-io/ci-tooling/actions/setup-python-env@v0
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
-          uv-version: ${{ inputs.uv-version }}
 
-      - name: 🚀 Run Performance Tests
-        shell: bash
-        run: |
-          source ./workenv/bin/activate
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
 
-          # Check if pytest-benchmark is available
-          if pip list | grep -q pytest-benchmark; then
-            echo "🚀 Running performance benchmarks..."
-            pytest --benchmark-only --benchmark-json=benchmark.json
+      - name: 📦 Build Package
+        run: uv build
 
-            # Generate performance summary
-            echo "## 🚀 Performance Results" >> $GITHUB_STEP_SUMMARY
-            echo "| Test | Status |" >> $GITHUB_STEP_SUMMARY
-            echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-            echo "| Benchmarks | ✅ Completed |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ pytest-benchmark not found, skipping performance tests"
-          fi
-
-      - name: 📤 Upload Performance Results
-        if: always()
+      - name: 📤 Upload Dist Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: performance-results
-          path: benchmark.json
-          retention-days: 30
+          name: dist
+          path: dist/
 
   # ==================================================================================
   # 📋 CI Summary
   # ==================================================================================
   summary:
     name: 📋 CI Summary
-    needs: [quality, test, security, secret-scan, performance]
+    needs: [quality, test, security, secret-scan, build]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: 📋 Generate Summary
-        shell: bash
         run: |
           echo "## 🎯 CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -238,6 +290,7 @@ jobs:
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Quality | ${{ needs.quality.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Tests | ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ inputs.run-security }}" = "true" ]; then
             echo "| Security | ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
@@ -247,19 +300,9 @@ jobs:
             echo "| Secret Scan | ${{ needs.secret-scan.result == 'success' && '✅ Passed' || '⚠️ Issues' }} |" >> $GITHUB_STEP_SUMMARY
           fi
 
-          if [ "${{ inputs.run-performance }}" = "true" ]; then
-            echo "| Performance | ${{ needs.performance.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          fi
-
           # Overall status
           OVERALL="✅ Success"
-          if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ]; then
-            OVERALL="❌ Failed"
-          fi
-          if [ "${{ inputs.run-security }}" = "true" ] && [ "${{ needs.security.result }}" != "success" ]; then
-            OVERALL="❌ Failed"
-          fi
-          if [ "${{ inputs.run-performance }}" = "true" ] && [ "${{ needs.performance.result }}" != "success" ]; then
+          if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.build.result }}" != "success" ]; then
             OVERALL="❌ Failed"
           fi
 
