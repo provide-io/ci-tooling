@@ -57,6 +57,7 @@ runs:
       with:
         version: ${{ inputs.uv-version }}
         enable-cache: ${{ inputs.cache-dependencies }}
+        ignore-nothing-to-cache: true
 
     - name: 📦 Create workenv directory
       id: workenv
