@@ -1,0 +1,188 @@
+name: '🔐 Security Scanning'
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: 'Python version to use'
+        type: string
+        default: '3.11'
+      uv-version:
+        description: 'UV version to use'
+        type: string
+        default: '0.7.8'
+      source-paths:
+        description: 'Source paths for security scanning'
+        type: string
+        default: 'src/'
+      run-bandit:
+        description: 'Run Bandit static analysis'
+        type: boolean
+        default: true
+      run-pip-audit:
+        description: 'Run pip-audit dependency check'
+        type: boolean
+        default: true
+      run-trufflehog:
+        description: 'Run TruffleHog secret scanning'
+        type: boolean
+        default: true
+      run-gitleaks:
+        description: 'Run Gitleaks secret scanning'
+        type: boolean
+        default: true
+      run-codeql:
+        description: 'Run CodeQL analysis'
+        type: boolean
+        default: false
+      bandit-severity:
+        description: 'Bandit minimum severity level (ll=low, l=medium, default=high)'
+        type: string
+        default: '-ll'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # ==================================================================================
+  # 🔒 Static Security Analysis
+  # ==================================================================================
+  static-analysis:
+    name: 🔒 Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: |
+          uv sync --group dev
+          source .venv/bin/activate
+          uv pip install bandit pip-audit
+
+      - name: 🔒 Run Bandit security scan
+        if: inputs.run-bandit
+        run: |
+          source .venv/bin/activate
+          echo "## 🔒 Bandit Security Scan" >> $GITHUB_STEP_SUMMARY
+          bandit -r ${{ inputs.source-paths }} -f json -o bandit-report.json ${{ inputs.bandit-severity }} || true
+          bandit -r ${{ inputs.source-paths }} ${{ inputs.bandit-severity }} || true
+
+      - name: 🔍 Run pip-audit
+        if: inputs.run-pip-audit
+        run: |
+          source .venv/bin/activate
+          echo "## 🔍 Dependency Vulnerability Check" >> $GITHUB_STEP_SUMMARY
+          pip-audit --format json --output pip-audit-report.json || true
+          pip-audit || true
+
+      - name: 📤 Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            pip-audit-report.json
+
+  # ==================================================================================
+  # 🔐 Secret Scanning
+  # ==================================================================================
+  secret-scan:
+    name: 🔐 Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔐 TruffleHog Scan (PR)
+        if: inputs.run-trufflehog && github.event_name == 'pull_request'
+        uses: trufflesecurity/trufflehog@main
+        continue-on-error: true
+        with:
+          path: ./
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.event.pull_request.head.sha }}
+
+      - name: 🔐 TruffleHog Scan (Push)
+        if: inputs.run-trufflehog && github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        uses: trufflesecurity/trufflehog@main
+        continue-on-error: true
+        with:
+          path: ./
+          base: ${{ github.event.before }}
+          head: ${{ github.sha }}
+
+      - name: 🔐 TruffleHog Scan (Full)
+        if: inputs.run-trufflehog && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.before == '0000000000000000000000000000000000000000'))
+        uses: trufflesecurity/trufflehog@main
+        continue-on-error: true
+        with:
+          path: ./
+          extra_args: --only-verified
+
+      - name: 🔐 Gitleaks Scan
+        if: inputs.run-gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  # ==================================================================================
+  # 🔬 CodeQL Analysis
+  # ==================================================================================
+  codeql:
+    name: 🔬 CodeQL Analysis
+    if: inputs.run-codeql
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔬 Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+
+      - name: 🔬 Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  # ==================================================================================
+  # 📋 Security Summary
+  # ==================================================================================
+  summary:
+    name: 📋 Security Summary
+    needs: [static-analysis, secret-scan, codeql]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📋 Generate Summary
+        run: |
+          echo "## 🔐 Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Static Analysis | ${{ needs.static-analysis.result == 'success' && '✅ Passed' || '⚠️ Issues' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secret Scan | ${{ needs.secret-scan.result == 'success' && '✅ Passed' || '⚠️ Issues' }} |" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.run-codeql }}" = "true" ]; then
+            echo "| CodeQL | ${{ needs.codeql.result == 'success' && '✅ Passed' || '⚠️ Issues' }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Security reports uploaded as artifacts for detailed review." >> $GITHUB_STEP_SUMMARY
