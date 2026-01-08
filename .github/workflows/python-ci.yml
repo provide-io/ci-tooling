@@ -51,13 +51,18 @@ on:
         description: 'Upload coverage to Codecov'
         type: boolean
         default: false
+      parallel-testing:
+        description: 'Enable parallel test execution with pytest-xdist (may break with some pytest plugins)'
+        type: boolean
+        default: true
     secrets:
       CODECOV_TOKEN:
         description: 'Codecov token for coverage upload'
         required: false
 
 env:
-  FORCE_COLOR: "1"
+  # NOTE: Do NOT set FORCE_COLOR=1 here - it breaks pytest-xdist's execnet
+  # subprocess communication which expects plain output during bootstrap
   UV_SYSTEM_PYTHON: "1"
 
 jobs:
@@ -147,7 +152,7 @@ jobs:
       - name: 🧪 Run Tests
         run: |
           source .venv/bin/activate
-          .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" 0 true
+          .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel-testing }}
 
       - name: 📤 Upload Coverage
         if: inputs.upload-coverage
@@ -262,7 +267,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           version: ${{ inputs.uv-version }}
-          enable-cache: true
+          enable-cache: false  # Build doesn't need cache, just runs uv build
 
       - name: 📦 Build Package
         run: uv build
