@@ -43,6 +43,10 @@ on:
         description: 'Actually publish to PyPI (release gate - requires manual approval)'
         type: boolean
         default: false
+      parallel-tests:
+        description: 'Run tests in parallel with pytest-xdist'
+        type: boolean
+        default: true
     secrets:
       PYPI_TOKEN:
         description: 'PyPI API token (required only if publish-pypi is true)'
@@ -82,6 +86,7 @@ jobs:
         uses: provide-io/ci-tooling/actions/python-test@main
         with:
           coverage-threshold: 0
+          parallel: ${{ inputs.parallel-tests }}
 
   # ==================================================================================
   # 🏗️ Build Package
