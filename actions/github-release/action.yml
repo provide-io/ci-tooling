@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: MIT
-
 name: 'GitHub Release'
 description: 'Create GitHub release with build artifacts (independent of PyPI publishing)'
 author: 'provide.io llc'
@@ -49,7 +46,7 @@ runs:
 
     - name: 🏷️ Create GitHub Release
       id: release
-      uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe  # v2.6.1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ steps.info.outputs.package_version }}
         name: v${{ steps.info.outputs.package_version }}
