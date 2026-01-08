@@ -12,15 +12,15 @@ inputs:
     required: false
     default: '0.7.8'
   workenv-path:
-    description: 'Path to create workenv directory'
+    description: 'Path to virtual environment directory'
     required: false
-    default: './workenv'
+    default: '.venv'
   cache-dependencies:
     description: 'Enable dependency caching'
     required: false
     default: 'true'
-  install-extras:
-    description: 'Package extras to install (comma-separated)'
+  install-group:
+    description: 'Dependency group to install (e.g., dev, docs)'
     required: false
     default: 'dev'
   project-path:
@@ -88,9 +88,9 @@ runs:
         # Check if pyproject.toml exists
         if [ -f "${{ inputs.project-path }}/pyproject.toml" ]; then
           echo "📦 Installing from pyproject.toml"
-          if [ -n "${{ inputs.install-extras }}" ]; then
-            echo "🔧 Installing with extras: ${{ inputs.install-extras }}"
-            uv sync --project "${{ inputs.project-path }}" --extra "${{ inputs.install-extras }}"
+          if [ -n "${{ inputs.install-group }}" ]; then
+            echo "🔧 Installing with group: ${{ inputs.install-group }}"
+            uv sync --project "${{ inputs.project-path }}" --group "${{ inputs.install-group }}"
           else
             uv sync --project "${{ inputs.project-path }}"
           fi
@@ -110,7 +110,8 @@ runs:
         echo "- **Python version:** $(python --version)" >> $GITHUB_STEP_SUMMARY
         echo "- **UV version:** $(uv --version)" >> $GITHUB_STEP_SUMMARY
         echo "- **Workenv path:** ${{ inputs.workenv-path }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Installed packages:** $(python -c \"import importlib.metadata as m; print(len(list(m.distributions())))\")" >> $GITHUB_STEP_SUMMARY
+        PKG_COUNT=$(python -c 'import importlib.metadata as m; print(len(list(m.distributions())))')
+        echo "- **Installed packages:** $PKG_COUNT" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
 
 branding:
