@@ -142,56 +142,19 @@ jobs:
           name: release-artifacts
           path: dist/
 
-      - name: 📋 Get Version Info
-        id: version
-        shell: bash
-        run: |
-          WHEEL_FILE=$(ls dist/*.whl | head -1 2>/dev/null || echo "")
-          if [ -n "$WHEEL_FILE" ]; then
-            PACKAGE_INFO=$(python3 -c 'import re,sys,os; f=os.path.basename(sys.argv[1]); m=re.match(r"^([^-]+)-([^-]+)", f); print(f"{m.group(1)} {m.group(2)}" if m else "unknown 0.0.0")' "$WHEEL_FILE")
-            PACKAGE_NAME=$(echo "$PACKAGE_INFO" | cut -d' ' -f1)
-            PACKAGE_VERSION=$(echo "$PACKAGE_INFO" | cut -d' ' -f2)
-          else
-            PACKAGE_NAME="unknown"
-            PACKAGE_VERSION="0.0.0"
-          fi
-          echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
-          echo "package_version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
-          echo "📦 Package: $PACKAGE_NAME v$PACKAGE_VERSION"
-
       - name: 🏷️ Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: provide-io/ci-tooling/actions/github-release@main
         with:
-          tag_name: v${{ steps.version.outputs.package_version }}
-          name: v${{ steps.version.outputs.package_version }}
-          files: dist/*
-          generate_release_notes: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts-path: dist/
           prerelease: ${{ inputs.prerelease }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 📊 Release Summary
-        shell: bash
-        run: |
-          echo "## 🏷️ GitHub Release Created" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Package:** ${{ steps.version.outputs.package_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ steps.version.outputs.package_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 Artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          ls -la dist/ >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
-          echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.package_version }})" >> $GITHUB_STEP_SUMMARY
 
   # ==================================================================================
   # 🚧 PyPI Publishing Gate
   # ==================================================================================
   publishing-gate:
     name: 🚧 Publishing Gate
-    needs: [github-release]
+    needs: [build, github-release]
     if: always() && needs.github-release.result == 'success'
     runs-on: ubuntu-latest
     steps:
@@ -231,8 +194,8 @@ jobs:
   # ==================================================================================
   test-release:
     name: 🧪 Test Release
-    needs: build
-    if: inputs.test-repository && inputs.publish-testpypi
+    needs: [build, github-release]
+    if: inputs.test-repository && inputs.publish-testpypi && needs.github-release.result == 'success'
     runs-on: ubuntu-latest
     environment: testpypi
     steps:
@@ -300,10 +263,11 @@ jobs:
   # ==================================================================================
   release:
     name: 🚀 Production Release
-    needs: [build, test-release]
+    needs: [build, github-release, test-release]
     if: >-
       always() &&
       needs.build.result == 'success' &&
+      needs.github-release.result == 'success' &&
       inputs.publish-pypi &&
       (needs.test-release.result == 'success' || !inputs.test-repository || !inputs.publish-testpypi)
     runs-on: ubuntu-latest
