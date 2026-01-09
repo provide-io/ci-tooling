@@ -121,19 +121,48 @@ jobs:
           retention-days: 30
 
   # ==================================================================================
-  # 🚧 Release Gate Status
+  # 🏷️ Create GitHub Release
   # ==================================================================================
-  gate-status:
-    name: 🚧 Release Gate
+  github-release:
+    name: 🏷️ GitHub Release
     needs: [build]
     if: always() && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist/
+
+      - name: 🏷️ Create GitHub Release
+        uses: provide-io/ci-tooling/actions/github-release@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts-path: dist/
+          prerelease: ${{ inputs.prerelease }}
+
+  # ==================================================================================
+  # 🚧 PyPI Publishing Gate
+  # ==================================================================================
+  publishing-gate:
+    name: 🚧 Publishing Gate
+    needs: [build, github-release]
+    if: always() && needs.github-release.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: 📋 Report Gate Status
         run: |
-          echo "## 🚧 Release Gate Status" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚧 PyPI Publishing Gate" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Build completed successfully. Publishing is gated by default." >> $GITHUB_STEP_SUMMARY
+          echo "GitHub Release created successfully. PyPI publishing is gated by default." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Target | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
@@ -151,7 +180,7 @@ jobs:
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### How to Publish" >> $GITHUB_STEP_SUMMARY
+          echo "### How to Publish to PyPI" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Re-run this workflow with the publish flags enabled:" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`yaml" >> $GITHUB_STEP_SUMMARY
@@ -165,8 +194,8 @@ jobs:
   # ==================================================================================
   test-release:
     name: 🧪 Test Release
-    needs: build
-    if: inputs.test-repository && inputs.publish-testpypi
+    needs: [build, github-release]
+    if: inputs.test-repository && inputs.publish-testpypi && needs.github-release.result == 'success'
     runs-on: ubuntu-latest
     environment: testpypi
     steps:
@@ -234,10 +263,11 @@ jobs:
   # ==================================================================================
   release:
     name: 🚀 Production Release
-    needs: [build, test-release]
+    needs: [build, github-release, test-release]
     if: >-
       always() &&
       needs.build.result == 'success' &&
+      needs.github-release.result == 'success' &&
       inputs.publish-pypi &&
       (needs.test-release.result == 'success' || !inputs.test-repository || !inputs.publish-testpypi)
     runs-on: ubuntu-latest
