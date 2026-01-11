@@ -16,7 +16,7 @@ jobs:
   # ==================================================================================
   test-setup-python-env:
     name: 🐍 Test setup-python-env
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
 
   test-python-quality:
     name: 🎨 Test python-quality
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -72,7 +72,7 @@ jobs:
 
   test-python-test:
     name: 🧪 Test python-test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -126,7 +126,7 @@ jobs:
 
   test-python-security:
     name: 🔒 Test python-security
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -166,7 +166,7 @@ jobs:
 
   test-python-build:
     name: 🏗️ Test python-build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -245,7 +245,7 @@ jobs:
       test-python-build
     ]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: 📊 Generate Test Summary
         shell: bash

@@ -50,7 +50,7 @@ jobs:
   # ==================================================================================
   static-analysis:
     name: 🔒 Static Analysis
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -102,7 +102,7 @@ jobs:
   # ==================================================================================
   secret-scan:
     name: 🔐 Secret Scan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -148,7 +148,7 @@ jobs:
   codeql:
     name: 🔬 CodeQL Analysis
     if: inputs.run-codeql
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       security-events: write
       contents: read
@@ -171,7 +171,7 @@ jobs:
     name: 📋 Security Summary
     needs: [static-analysis, secret-scan, codeql]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: 📋 Generate Summary
         run: |
