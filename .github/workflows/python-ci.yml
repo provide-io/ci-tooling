@@ -10,7 +10,7 @@ on:
       uv-version:
         description: 'UV version to use'
         type: string
-        default: '0.7.8'
+        default: '0.9.13'
       source-paths:
         description: 'Source paths for quality checks'
         type: string
@@ -36,13 +36,17 @@ on:
         type: boolean
         default: false
       matrix-testing:
-        description: 'Enable matrix testing across Python versions'
+        description: 'Enable matrix testing across Python versions (3.11, 3.12, 3.13)'
         type: boolean
         default: false
-      os-matrix:
-        description: 'Operating systems to test on'
+      platform-preset:
+        description: 'Platform preset: minimal (linux x64 only), standard (linux + macos), full (+ windows)'
         type: string
-        default: 'ubuntu-latest'
+        default: 'standard'
+      include-windows:
+        description: 'Include Windows platforms (off by default, overrides preset)'
+        type: boolean
+        default: false
       fail-fast:
         description: 'Fail fast in matrix builds'
         type: boolean
@@ -71,7 +75,7 @@ jobs:
   # ==================================================================================
   quality:
     name: 🔧 Code Quality
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -113,17 +117,16 @@ jobs:
           .ci-tooling/scripts/quality/run-mypy.sh src/ false || true
 
   # ==================================================================================
-  # 🧪 Tests
+  # 🧪 Tests - Platform Matrix
   # ==================================================================================
   test:
-    name: 🧪 Tests
+    name: 🧪 Tests (linux_amd64, py${{ matrix.python-version }})
     needs: quality
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: ${{ inputs.fail-fast }}
       matrix:
-        os: ${{ fromJson(format('["{0}"]', inputs.os-matrix)) }}
         python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
-    runs-on: ${{ matrix.os }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -161,7 +164,206 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
           flags: unittests
-          name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
+          name: codecov-linux_amd64-py${{ matrix.python-version }}
+
+  # Additional platform tests (standard/full presets)
+  test-linux-arm:
+    name: 🧪 Tests (linux_arm64, py${{ matrix.python-version }})
+    needs: quality
+    if: inputs.platform-preset == 'standard' || inputs.platform-preset == 'full'
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: uv sync --group dev
+
+      - name: 🧪 Run Tests
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel-testing }}
+
+  test-macos-arm:
+    name: 🧪 Tests (darwin_arm64, py${{ matrix.python-version }})
+    needs: quality
+    if: inputs.platform-preset == 'standard' || inputs.platform-preset == 'full'
+    runs-on: macos-15
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: uv sync --group dev
+
+      - name: 🧪 Run Tests
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel-testing }}
+
+  test-macos-intel:
+    name: 🧪 Tests (darwin_amd64, py${{ matrix.python-version }})
+    needs: quality
+    if: inputs.platform-preset == 'standard' || inputs.platform-preset == 'full'
+    runs-on: macos-15-intel
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: uv sync --group dev
+
+      - name: 🧪 Run Tests
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel-testing }}
+
+  # Windows tests (full preset or include-windows)
+  test-windows:
+    name: 🧪 Tests (windows_amd64, py${{ matrix.python-version }})
+    needs: quality
+    if: inputs.platform-preset == 'full' || inputs.include-windows
+    runs-on: windows-2022
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: uv sync --group dev
+
+      - name: 🧪 Run Tests
+        shell: pwsh
+        run: |
+          .venv\Scripts\Activate.ps1
+          pytest ${{ inputs.test-directory }} -v --tb=short
+
+  test-windows-arm:
+    name: 🧪 Tests (windows_arm64, py${{ matrix.python-version }})
+    needs: quality
+    if: inputs.platform-preset == 'full' || inputs.include-windows
+    runs-on: windows-11-arm
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: uv sync --group dev
+
+      - name: 🧪 Run Tests
+        shell: pwsh
+        run: |
+          .venv\Scripts\Activate.ps1
+          pytest ${{ inputs.test-directory }} -v --tb=short
 
   # ==================================================================================
   # 🔒 Security Scanning
@@ -170,7 +372,7 @@ jobs:
     name: 🔒 Security
     needs: quality
     if: inputs.run-security
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       security-events: write
       contents: read
@@ -228,7 +430,7 @@ jobs:
     name: 🔐 Secret Scan
     needs: quality
     if: inputs.run-secret-scan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -252,8 +454,9 @@ jobs:
   # ==================================================================================
   build:
     name: 📦 Build
-    needs: test
-    runs-on: ubuntu-latest
+    needs: [test, test-linux-arm, test-macos-arm, test-macos-intel]
+    if: always() && needs.test.result == 'success'
+    runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -283,19 +486,30 @@ jobs:
   # ==================================================================================
   summary:
     name: 📋 CI Summary
-    needs: [quality, test, security, secret-scan, build]
+    needs: [quality, test, test-linux-arm, test-macos-arm, test-macos-intel, test-windows, test-windows-arm, security, secret-scan, build]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: 📋 Generate Summary
         run: |
           echo "## 🎯 CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Platform Preset:** ${{ inputs.platform-preset }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Quality | ${{ needs.quality.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests | ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests (linux_amd64) | ${{ needs.test.result == 'success' && '✅ Passed' || (needs.test.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests (linux_arm64) | ${{ needs.test-linux-arm.result == 'success' && '✅ Passed' || (needs.test-linux-arm.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests (darwin_arm64) | ${{ needs.test-macos-arm.result == 'success' && '✅ Passed' || (needs.test-macos-arm.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests (darwin_amd64) | ${{ needs.test-macos-intel.result == 'success' && '✅ Passed' || (needs.test-macos-intel.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ inputs.platform-preset }}" = "full" ] || [ "${{ inputs.include-windows }}" = "true" ]; then
+            echo "| Tests (windows_amd64) | ${{ needs.test-windows.result == 'success' && '✅ Passed' || (needs.test-windows.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Tests (windows_arm64) | ${{ needs.test-windows-arm.result == 'success' && '✅ Passed' || (needs.test-windows-arm.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || (needs.build.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ inputs.run-security }}" = "true" ]; then
             echo "| Security | ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
