@@ -114,7 +114,7 @@ jobs:
           build-backend: ${{ inputs.build-backend }}
 
       - name: 📤 Upload Build Artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: release-artifacts
           path: dist/*
