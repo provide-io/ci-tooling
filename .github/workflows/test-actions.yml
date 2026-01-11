@@ -42,7 +42,6 @@ jobs:
   test-python-quality:
     name: 🎨 Test python-quality
     runs-on: ubuntu-24.04
-    continue-on-error: true  # TODO: fix heredoc indentation in test fixtures
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -77,7 +76,6 @@ jobs:
   test-python-test:
     name: 🧪 Test python-test
     runs-on: ubuntu-24.04
-    continue-on-error: true  # TODO: fix pythonpath in test fixtures
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -129,7 +127,45 @@ jobs:
           source-directory: 'test_src/'
           coverage-threshold: 50
 
-  # NOTE: test-python-security removed - action doesn't exist yet
+  test-python-security:
+    name: 🔒 Test python-security
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python Environment
+        uses: ./actions/setup-python-env
+        with:
+          python-version: '3.11'
+          cache-dependencies: false
+
+      - name: 📝 Create test files
+        shell: bash
+        run: |
+          mkdir -p test_src
+          cat > test_src/example.py << 'EOF'
+          """Example with potential security issues for testing."""
+          import subprocess
+          import os
+
+          def safe_function():
+              """A safe function."""
+              return "This is safe"
+
+          def potentially_unsafe():
+              """Function with potential security issue."""
+              # This would normally trigger bandit warnings
+              user_input = "echo hello"
+              result = subprocess.run(user_input, shell=False, capture_output=True, text=True)
+              return result.stdout
+          EOF
+
+      - name: 🧪 Test python-security action
+        uses: ./actions/python-security
+        with:
+          source-paths: 'test_src/'
+          fail-on-findings: false
 
   test-python-build:
     name: 🏗️ Test python-build

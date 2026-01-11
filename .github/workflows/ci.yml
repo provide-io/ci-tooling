@@ -13,8 +13,8 @@ permissions:
 
 jobs:
   quality:
-    name: Code Quality
-    runs-on: ubuntu-latest
+    name: 🎨 Code Quality
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: provide-io/ci-tooling/actions/setup-python-env@v0.0.1
@@ -41,7 +41,7 @@ jobs:
   test:
     name: Tests
     needs: quality
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: provide-io/ci-tooling/actions/setup-python-env@v0.0.1
@@ -65,7 +65,7 @@ jobs:
     name: Release
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: provide-io/ci-tooling/actions/setup-python-env@v0.0.1
