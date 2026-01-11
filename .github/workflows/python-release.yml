@@ -123,7 +123,7 @@ jobs:
     name: 🏷️ GitHub Release
     needs: [build]
     if: always() && needs.build.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
@@ -152,7 +152,7 @@ jobs:
     name: 🚧 Publishing Gate
     needs: [build, github-release]
     if: always() && needs.github-release.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: 📋 Report Gate Status
         run: |
@@ -192,7 +192,7 @@ jobs:
     name: 🧪 Test Release
     needs: [build, github-release]
     if: inputs.test-repository && inputs.publish-testpypi && needs.github-release.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: testpypi
     steps:
       - name: 📥 Checkout
@@ -266,7 +266,7 @@ jobs:
       needs.github-release.result == 'success' &&
       inputs.publish-pypi &&
       (needs.test-release.result == 'success' || !inputs.test-repository || !inputs.publish-testpypi)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: pypi
     permissions:
       contents: write
