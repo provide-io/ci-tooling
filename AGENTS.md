@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance for AI assistants when working with code in this repository.
 
 ## Repository Overview
 
@@ -14,7 +14,7 @@ The repository is organized into these key components:
 
 ### Actions (`actions/`)
 Composite GitHub Actions that handle specific CI tasks:
-- `setup-python-env/` - Environment setup with Python, UV, and workenv (not .venv)
+- `setup-python-env/` - Environment setup with Python, UV, and .venv
 - `python-quality/` - Code quality checks with ruff and mypy
 - `python-test/` - Test execution with pytest and coverage
 - `python-security/` - Security scanning with bandit/safety
