@@ -1,0 +1,19 @@
+# CI Tooling - GitHub Actions only (no Python package)
+# The Python CLI tools (conform, config-check) have been moved to wrknv.
+
+# This pyproject.toml is kept for tool configurations used by the examples/tests.
+
+[tool.ruff]
+line-length = 111
+indent-width = 4
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "ANN", "B", "C90", "SIM", "PTH", "RUF"]
+ignore = ["ANN401", "B008", "E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

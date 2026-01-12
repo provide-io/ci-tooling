@@ -1,0 +1,79 @@
+name: 'GitHub Release'
+description: 'Create GitHub release with build artifacts (independent of PyPI publishing)'
+author: 'provide.io llc'
+
+inputs:
+  github-token:
+    description: 'GitHub token for creating releases'
+    required: true
+  artifacts-path:
+    description: 'Path to build artifacts'
+    required: false
+    default: 'dist/'
+  prerelease:
+    description: 'Mark as prerelease'
+    required: false
+    default: 'false'
+  generate-notes:
+    description: 'Auto-generate release notes'
+    required: false
+    default: 'true'
+
+outputs:
+  package-name:
+    description: 'Extracted package name'
+    value: ${{ steps.info.outputs.package_name }}
+  package-version:
+    description: 'Extracted package version'
+    value: ${{ steps.info.outputs.package_version }}
+  release-url:
+    description: 'GitHub release URL'
+    value: ${{ steps.release.outputs.url }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 📋 Extract Package Info
+      id: info
+      shell: bash
+      run: |
+        VERSION=$(python3 "${{ github.action_path }}/../../scripts/extract_version.py" "${{ inputs.artifacts-path }}")
+        PACKAGE_NAME=$(python3 "${{ github.action_path }}/../../scripts/extract_package_name.py" "${{ inputs.artifacts-path }}")
+
+        echo "package_version=$VERSION" >> $GITHUB_OUTPUT
+        echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+        echo "📦 Package: $PACKAGE_NAME v$VERSION"
+
+    - name: 🏷️ Create GitHub Release
+      id: release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ steps.info.outputs.package_version }}
+        name: v${{ steps.info.outputs.package_version }}
+        files: ${{ inputs.artifacts-path }}/*
+        generate_release_notes: ${{ inputs.generate-notes }}
+        prerelease: ${{ inputs.prerelease }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+
+    - name: 📊 Release Summary
+      shell: bash
+      run: |
+        echo "## 🏷️ GitHub Release Created" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Package:** ${{ steps.info.outputs.package_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Version:** ${{ steps.info.outputs.package_version }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 Artifacts" >> $GITHUB_STEP_SUMMARY
+        for file in "${{ inputs.artifacts-path }}"/*; do
+          if [ -f "$file" ]; then
+            echo "- $(basename "$file")" >> $GITHUB_STEP_SUMMARY
+          fi
+        done
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
+        echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.info.outputs.package_version }})" >> $GITHUB_STEP_SUMMARY
+
+branding:
+  icon: 'tag'
+  color: 'green'

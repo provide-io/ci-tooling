@@ -1,0 +1,79 @@
+name: 'Build PSP Package'
+description: 'Build PSPF packages using FlavorPack'
+author: 'provide.io llc'
+
+inputs:
+  python-version:
+    description: 'Python version'
+    required: false
+    default: '3.11'
+  uv-version:
+    description: 'UV version'
+    required: false
+    default: '0.9.6'
+  manifest:
+    description: 'Path to pyproject.toml'
+    required: false
+    default: 'pyproject.toml'
+  output-path:
+    description: 'Output .psp file location'
+    required: false
+  private-key:
+    description: 'Path to Ed25519 private key (generates temp if not provided)'
+    required: false
+  public-key:
+    description: 'Path to Ed25519 public key'
+    required: false
+  key-seed:
+    description: 'Seed for deterministic key generation'
+    required: false
+  strip:
+    description: 'Strip debug symbols from launcher'
+    required: false
+    default: 'false'
+  verify:
+    description: 'Verify package after build'
+    required: false
+    default: 'true'
+
+outputs:
+  psp-path:
+    description: 'Path to built .psp file'
+    value: ${{ steps.build.outputs.psp-path }}
+  platform:
+    description: 'Detected platform (e.g., linux_amd64, darwin_arm64)'
+    value: ${{ steps.build.outputs.platform }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install UV
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: ${{ inputs.uv-version }}
+
+    - name: Install FlavorPack
+      shell: bash
+      run: uv tool install flavorpack
+
+    - name: Build PSP
+      id: build
+      shell: bash
+      env:
+        MANIFEST: ${{ inputs.manifest }}
+        OUTPUT_PATH: ${{ inputs.output-path }}
+        PRIVATE_KEY: ${{ inputs.private-key }}
+        PUBLIC_KEY: ${{ inputs.public-key }}
+        KEY_SEED: ${{ inputs.key-seed }}
+        STRIP: ${{ inputs.strip }}
+        VERIFY: ${{ inputs.verify }}
+      run: ${{ github.action_path }}/scripts/build.sh
+
+branding:
+  icon: 'package'
+  color: 'purple'

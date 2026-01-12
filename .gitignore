@@ -1,0 +1,50 @@
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Testing
+.pytest_cache/
+.hypothesis/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Virtual environments
+.venv
+workenv/
+
+# Type checking / linting
+.mypy_cache/
+.ruff_cache/
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# MkDocs build output
+site/
+docs/.shared-theme/
+
+# Bfiles artifacts
+bf-*.txt
+*.bf.txt
+
+# Provide tooling artifacts
+.provide/foundry/
+
+# Terraform state (sensitive)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl

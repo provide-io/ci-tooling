@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(if [ -d \"/Users/tim/code/gh/provide-io/$repo/.github/workflows\" ])",
+      "Bash(then echo \"Has workflows:\")",
+      "Bash(else echo \"No workflows directory\")",
+      "Bash(fi)",
+      "Bash(gh workflow list:*)",
+      "Bash(cd:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh auth:*)",
+      "Bash(awk:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh api:*)",
+      "Bash(gh workflow run:*)",
+      "Bash(printenv)",
+      "Bash(gh run download:*)",
+      "Read(//private/tmp/artifacts/**)",
+      "WebSearch",
+      "Bash(gh secret:*)",
+      "WebFetch(domain:peps.python.org)",
+      "Bash(od:*)",
+      "Read(//private/tmp/**)"
+    ],
+    "additionalDirectories": [
+      "/Users/tim/code/gh/provide-io"
+    ]
+  }
+}

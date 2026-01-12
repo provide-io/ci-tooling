@@ -1,0 +1,121 @@
+name: 'Setup Python Environment'
+description: 'Setup Python, UV, and workenv for provide.io projects'
+author: 'provide.io llc'
+
+inputs:
+  python-version:
+    description: 'Python version to install'
+    required: false
+    default: '3.11'
+  uv-version:
+    description: 'UV package manager version'
+    required: false
+    default: '0.7.8'
+  workenv-path:
+    description: 'Path to virtual environment directory'
+    required: false
+    default: '.venv'
+  cache-dependencies:
+    description: 'Enable dependency caching'
+    required: false
+    default: 'true'
+  install-group:
+    description: 'Dependency group to install (e.g., dev, docs)'
+    required: false
+    default: 'dev'
+  project-path:
+    description: 'Path to project root (for editable install)'
+    required: false
+    default: '.'
+
+outputs:
+  python-version:
+    description: 'Installed Python version'
+    value: ${{ steps.python.outputs.python-version }}
+  uv-version:
+    description: 'Installed UV version'
+    value: ${{ steps.uv.outputs.version }}
+  workenv-path:
+    description: 'Path to workenv directory'
+    value: ${{ steps.workenv.outputs.path }}
+  cache-hit:
+    description: 'Whether dependency cache was hit'
+    value: ${{ steps.cache.outputs.cache-hit }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🐍 Setup Python
+      id: python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: ⚡ Install UV
+      id: uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: ${{ inputs.uv-version }}
+        enable-cache: ${{ inputs.cache-dependencies }}
+        ignore-nothing-to-cache: true
+
+    - name: 📦 Create workenv directory
+      id: workenv
+      shell: bash
+      run: |
+        WORKENV_PATH="${{ inputs.workenv-path }}"
+        echo "Creating workenv at: $WORKENV_PATH"
+        uv venv "$WORKENV_PATH"
+        echo "path=$WORKENV_PATH" >> $GITHUB_OUTPUT
+        echo "$WORKENV_PATH/bin" >> $GITHUB_PATH
+
+    # CACHE_VERSION: Increment to invalidate all caches (v2: include uv.lock in key)
+    - name: 🔑 Setup dependency cache
+      id: cache
+      if: inputs.cache-dependencies == 'true'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/uv
+          ${{ inputs.workenv-path }}
+        key: uv-v2-${{ runner.os }}-python${{ inputs.python-version }}-${{ hashFiles('**/uv.lock', '**/pyproject.toml', '**/requirements*.txt') }}
+        restore-keys: |
+          uv-v2-${{ runner.os }}-python${{ inputs.python-version }}-
+
+    - name: 📥 Install project dependencies
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        # Check if pyproject.toml exists
+        if [ -f "${{ inputs.project-path }}/pyproject.toml" ]; then
+          echo "📦 Installing from pyproject.toml"
+          if [ -n "${{ inputs.install-group }}" ]; then
+            echo "🔧 Installing with group: ${{ inputs.install-group }}"
+            uv sync --project "${{ inputs.project-path }}" --group "${{ inputs.install-group }}"
+          else
+            uv sync --project "${{ inputs.project-path }}"
+          fi
+        elif [ -f "${{ inputs.project-path }}/requirements.txt" ]; then
+          echo "⚠️ requirements.txt installs are not supported in uv-only mode"
+          echo "   Please migrate to pyproject.toml for dependency management"
+        else
+          echo "⚠️ No pyproject.toml or requirements.txt found, skipping dependency installation"
+        fi
+
+    - name: 🔍 Verify installation
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+        echo "## 🐍 Python Environment Setup Complete" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Python version:** $(python --version)" >> $GITHUB_STEP_SUMMARY
+        echo "- **UV version:** $(uv --version)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Workenv path:** ${{ inputs.workenv-path }}" >> $GITHUB_STEP_SUMMARY
+        PKG_COUNT=$(python -c 'import importlib.metadata as m; print(len(list(m.distributions())))')
+        echo "- **Installed packages:** $PKG_COUNT" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+branding:
+  icon: 'package'
+  color: 'blue'

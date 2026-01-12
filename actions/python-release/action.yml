@@ -1,0 +1,259 @@
+name: 'Python Release'
+description: 'Release Python packages to PyPI and create GitHub releases'
+author: 'provide.io llc'
+
+inputs:
+  pypi-token:
+    description: 'PyPI API token for publishing'
+    required: true
+  github-token:
+    description: 'GitHub token for creating releases'
+    required: false
+    default: ${{ github.token }}
+  repository-url:
+    description: 'PyPI repository URL (for TestPyPI use)'
+    required: false
+    default: 'https://upload.pypi.org/legacy/'
+  skip-existing:
+    description: 'Skip uploading if package already exists'
+    required: false
+    default: 'true'
+  verify-metadata:
+    description: 'Verify package metadata before upload'
+    required: false
+    default: 'true'
+  create-github-release:
+    description: 'Create GitHub release'
+    required: false
+    default: 'true'
+  release-notes:
+    description: 'Release notes content'
+    required: false
+    default: ''
+  release-notes-file:
+    description: 'Path to release notes file'
+    required: false
+    default: ''
+  prerelease:
+    description: 'Mark as prerelease'
+    required: false
+    default: 'false'
+  workenv-path:
+    description: 'Path to workenv directory'
+    required: false
+    default: './workenv'
+  artifacts-path:
+    description: 'Path to build artifacts'
+    required: false
+    default: 'dist/'
+  dry-run:
+    description: 'Dry run mode - validate and preview without publishing'
+    required: false
+    default: 'false'
+
+outputs:
+  release-version:
+    description: 'Released version'
+    value: ${{ steps.version.outputs.version }}
+  pypi-url:
+    description: 'PyPI package URL'
+    value: ${{ steps.set-url.outputs.url }}
+  github-release-url:
+    description: 'GitHub release URL'
+    value: ${{ steps.github-release.outputs.url }}
+  release-result:
+    description: 'Release result (success/failed)'
+    value: ${{ steps.summary.outputs.result }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 📦 Get release version
+      id: version
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        # Extract version using dedicated script
+        VERSION=$(python3 "${{ github.action_path }}/../../scripts/extract_version.py" "${{ inputs.artifacts-path }}")
+
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "📦 Release version: $VERSION"
+
+    # Removed twine installation - using official PyPA action instead
+
+    - name: ✅ Verify package metadata
+      if: inputs.verify-metadata == 'true'
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        echo "✅ Verifying package metadata..."
+
+        # Check packages with twine
+        twine check "${{ inputs.artifacts-path }}"/*
+
+        echo "✅ Package metadata verification passed"
+
+    - name: 📤 Dry Run Validation
+      if: inputs.dry-run == 'true'
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        echo "🧪 DRY RUN: Would upload packages to PyPI..."
+        echo "Repository: ${{ inputs.repository-url }}"
+        echo "Packages that would be uploaded:"
+        ls -la "${{ inputs.artifacts-path }}"/*
+
+        # Check packages without uploading
+        echo "✅ Package validation (dry-run):"
+        twine check "${{ inputs.artifacts-path }}"/*
+        echo "✅ Dry run completed successfully"
+
+    - name: 📤 Upload to PyPI
+      id: upload
+      if: inputs.dry-run != 'true'
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ inputs.pypi-token }}
+        repository-url: ${{ inputs.repository-url }}
+        packages-dir: ${{ inputs.artifacts-path }}
+        skip-existing: ${{ inputs.skip-existing }}
+        verify-metadata: ${{ inputs.verify-metadata }}
+
+    - name: 📦 Set PyPI URL
+      id: set-url
+      shell: bash
+      run: |
+        source "${{ inputs.workenv-path }}/bin/activate"
+
+        # Construct PyPI URL
+        PACKAGE_NAME=$(python3 "${{ github.action_path }}/../../scripts/extract_package_name.py" "${{ inputs.artifacts-path }}")
+        PYPI_URL="https://pypi.org/project/$PACKAGE_NAME/${{ steps.version.outputs.version }}/"
+        echo "url=$PYPI_URL" >> $GITHUB_OUTPUT
+
+        if [ "${{ inputs.dry-run }}" = "true" ]; then
+          echo "📦 Package would be available at: $PYPI_URL"
+        else
+          echo "📦 Package available at: $PYPI_URL"
+        fi
+
+    - name: 📝 Prepare release notes
+      id: notes
+      if: inputs.create-github-release == 'true'
+      shell: bash
+      run: |
+        # Prepare release notes
+        NOTES=""
+
+        if [ -n "${{ inputs.release-notes }}" ]; then
+          NOTES="${{ inputs.release-notes }}"
+        elif [ -n "${{ inputs.release-notes-file }}" ] && [ -f "${{ inputs.release-notes-file }}" ]; then
+          NOTES=$(cat "${{ inputs.release-notes-file }}")
+        else
+          # Generate basic release notes
+          NOTES="## Release ${{ steps.version.outputs.version }}"
+          NOTES="${NOTES}\n\n### Package Information"
+          NOTES="${NOTES}\n- Version: ${{ steps.version.outputs.version }}"
+          NOTES="${NOTES}\n- PyPI: ${{ steps.upload.outputs.url }}"
+          NOTES="${NOTES}\n\n### Artifacts"
+          # List artifacts
+          for file in "${{ inputs.artifacts-path }}"/*; do
+            if [ -f "$file" ]; then
+              NOTES="${NOTES}\n- $(basename "$file")"
+            fi
+          done
+        fi
+
+        # Save notes to file for GitHub CLI
+        echo "$NOTES" > release-notes.md
+        echo "Release notes prepared"
+
+    - name: 🏷️ Create GitHub Release
+      id: github-release
+      if: inputs.create-github-release == 'true' && inputs.dry-run != 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        echo "🏷️ Creating GitHub release..."
+
+        VERSION="${{ steps.version.outputs.version }}"
+        TAG="v$VERSION"
+
+        RELEASE_ARGS="--title \"Release $VERSION\" --notes-file release-notes.md"
+
+        if [ "${{ inputs.prerelease }}" = "true" ]; then
+          RELEASE_ARGS="$RELEASE_ARGS --prerelease"
+        fi
+
+        # Create release with artifacts
+        if gh release create "$TAG" "${{ inputs.artifacts-path }}"/* $RELEASE_ARGS; then
+          RELEASE_URL=$(gh release view "$TAG" --json url --jq '.url')
+          echo "url=$RELEASE_URL" >> $GITHUB_OUTPUT
+          echo "✅ GitHub release created: $RELEASE_URL"
+        else
+          echo "❌ Failed to create GitHub release"
+          exit 1
+        fi
+
+    - name: 📊 Release Summary
+      id: summary
+      shell: bash
+      run: |
+        echo "result=success" >> $GITHUB_OUTPUT
+
+        if [ "${{ inputs.dry-run }}" = "true" ]; then
+          echo "## 🧪 Dry Run Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Mode:** Dry Run (no actual publishing)" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "## 🚀 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Mode:** Production Release" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        VERSION="${{ steps.version.outputs.version }}"
+        echo "**Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        echo "### 📦 PyPI Release" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ inputs.dry-run }}" = "true" ]; then
+          echo "🧪 **Dry run:** Package validation successful" >> $GITHUB_STEP_SUMMARY
+          echo "📦 **Would publish to:** ${{ inputs.repository-url }}" >> $GITHUB_STEP_SUMMARY
+        elif [ -n "${{ steps.set-url.outputs.url }}" ]; then
+          echo "✅ **Published to PyPI:** [${{ steps.set-url.outputs.url }}](${{ steps.set-url.outputs.url }})" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **PyPI upload failed**" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [ "${{ inputs.create-github-release }}" = "true" ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🏷️ GitHub Release" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            echo "🧪 **Dry run:** GitHub release would be created" >> $GITHUB_STEP_SUMMARY
+          elif [ -n "${{ steps.github-release.outputs.url }}" ]; then
+            echo "✅ **GitHub release created:** [${{ steps.github-release.outputs.url }}](${{ steps.github-release.outputs.url }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **GitHub release creation failed**" >> $GITHUB_STEP_SUMMARY
+          fi
+        fi
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📋 Artifacts" >> $GITHUB_STEP_SUMMARY
+        for file in "${{ inputs.artifacts-path }}"/*; do
+          if [ -f "$file" ]; then
+            echo "- $(basename "$file")" >> $GITHUB_STEP_SUMMARY
+          fi
+        done
+
+        if [ "${{ inputs.dry-run }}" = "true" ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ▶️ Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "To perform the actual release, run this workflow again with \`dry-run: false\`" >> $GITHUB_STEP_SUMMARY
+        fi
+
+branding:
+  icon: 'upload'
+  color: 'yellow'

@@ -1,0 +1,29 @@
+name: 'Python Build'
+description: 'Build Python package'
+author: 'provide.io llc'
+
+inputs:
+  build-backend:
+    description: 'Build backend (uv, build)'
+    required: false
+    default: 'uv'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 📦 Build Package
+      shell: bash
+      run: |
+        echo "📦 Building package"
+        uv build
+
+    - name: 📋 Build Summary
+      shell: bash
+      run: |
+        echo "## 📦 Build Artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        ls -la dist/ >> $GITHUB_STEP_SUMMARY || echo "No dist directory"
+
+branding:
+  icon: 'package'
+  color: 'orange'

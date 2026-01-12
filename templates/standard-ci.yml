@@ -1,0 +1,172 @@
+name: 🧪 CI - Tests & Quality
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      matrix-testing:
+        description: 'Enable matrix testing across Python versions'
+        type: boolean
+        default: false
+      os-matrix:
+        description: 'Operating systems to test on (JSON array)'
+        type: string
+        default: '["ubuntu-latest"]'
+      run-security:
+        description: 'Run security scanning'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write  # For trusted publishing
+
+env:
+  FORCE_COLOR: "1"
+
+jobs:
+  # ==================================================================================
+  # 🎨 Code Quality & Type Checking (Single Runner)
+  # ==================================================================================
+  quality:
+    name: 🎨 Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔐 Setup GitHub Auth
+        uses: provide-io/ci-tooling/actions/setup-github-auth@main
+        env:
+          GH_ORG_HELPERS: ${{ secrets.GH_ORG_HELPERS }}
+
+      - name: 🐍 Python CI Pipeline
+        uses: provide-io/ci-tooling/actions/python-ci@main
+        with:
+          mode: 'quality'
+          python-version: '3.11'
+          run-quality-checks: true
+          dependency-groups: 'dev'
+          upload-artifacts: false
+
+  # ==================================================================================
+  # 🧪 Tests (Multi-Arch Matrix)
+  # ==================================================================================
+  test:
+    name: 🧪 Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJson(inputs.os-matrix || '["ubuntu-latest", "macos-latest", "windows-latest"]') }}
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || '["3.11"]') }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔐 Setup GitHub Auth
+        if: matrix.os == 'ubuntu-latest'  # Only needed for private repos
+        uses: provide-io/ci-tooling/actions/setup-github-auth@main
+        env:
+          GH_ORG_HELPERS: ${{ secrets.GH_ORG_HELPERS }}
+
+      - name: 🧪 Python CI Pipeline
+        uses: provide-io/ci-tooling/actions/python-ci@main
+        with:
+          mode: 'test'
+          python-version: ${{ matrix.python-version }}
+          test-directory: 'tests/'
+          source-directory: 'src/'
+          coverage-threshold: 75
+          dependency-groups: 'dev'
+          upload-artifacts: false
+
+      - name: 📊 Upload Coverage
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
+          fail_ci_if_error: false
+
+  # ==================================================================================
+  # 🔒 Security Scanning (Single Runner, Optional)
+  # ==================================================================================
+  security:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    if: inputs.run-security == true
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔐 Setup GitHub Auth
+        uses: provide-io/ci-tooling/actions/setup-github-auth@main
+        env:
+          GH_ORG_HELPERS: ${{ secrets.GH_ORG_HELPERS }}
+
+      - name: 🔒 Python CI Pipeline
+        uses: provide-io/ci-tooling/actions/python-ci@main
+        with:
+          mode: 'security'
+          python-version: '3.11'
+          run-security-scan: true
+          dependency-groups: 'dev'
+          upload-artifacts: false
+
+  # ==================================================================================
+  # 📦 Build Package (Single Runner)
+  # ==================================================================================
+  build:
+    name: 📦 Build Package
+    needs: [quality, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔐 Setup GitHub Auth
+        uses: provide-io/ci-tooling/actions/setup-github-auth@main
+        env:
+          GH_ORG_HELPERS: ${{ secrets.GH_ORG_HELPERS }}
+
+      - name: 📦 Python CI Pipeline
+        uses: provide-io/ci-tooling/actions/python-ci@main
+        with:
+          mode: 'build'
+          python-version: '3.11'
+          dependency-groups: 'dev'
+          upload-artifacts: true
+
+  # ==================================================================================
+  # 📋 CI Summary
+  # ==================================================================================
+  summary:
+    name: 📋 CI Complete
+    needs: [quality, test, build]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📋 Generate Summary
+        run: |
+          echo "## 🎯 CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | ${{ needs.quality.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.quality.result }}" == "success" && "${{ needs.test.result }}" == "success" && "${{ needs.build.result }}" == "success" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🎉 **All checks passed!** Ready for release." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Some checks failed.** Please review and fix issues." >> $GITHUB_STEP_SUMMARY
+          fi

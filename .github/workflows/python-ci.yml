@@ -1,0 +1,529 @@
+name: '⚙️ Continuous Integration'
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: 'Python version to use'
+        type: string
+        default: '3.11'
+      uv-version:
+        description: 'UV version to use'
+        type: string
+        default: '0.9.13'
+      source-paths:
+        description: 'Source paths for quality checks'
+        type: string
+        default: 'src/ tests/'
+      test-directory:
+        description: 'Test directory'
+        type: string
+        default: 'tests/'
+      coverage-threshold:
+        description: 'Coverage threshold percentage'
+        type: number
+        default: 80
+      run-security:
+        description: 'Run security scanning (bandit)'
+        type: boolean
+        default: true
+      run-secret-scan:
+        description: 'Run secret scanning (TruffleHog, Gitleaks)'
+        type: boolean
+        default: true
+      run-performance:
+        description: 'Run performance tests'
+        type: boolean
+        default: false
+      matrix-testing:
+        description: 'Enable matrix testing across Python versions (3.11, 3.12, 3.13)'
+        type: boolean
+        default: false
+      platform-preset:
+        description: 'Platform preset: minimal (linux x64 only), standard (linux + macos), full (+ windows)'
+        type: string
+        default: 'standard'
+      include-windows:
+        description: 'Include Windows platforms (off by default, overrides preset)'
+        type: boolean
+        default: false
+      fail-fast:
+        description: 'Fail fast in matrix builds'
+        type: boolean
+        default: false
+      upload-coverage:
+        description: 'Upload coverage to Codecov'
+        type: boolean
+        default: false
+      parallel-testing:
+        description: 'Enable parallel test execution with pytest-xdist (may break with some pytest plugins)'
+        type: boolean
+        default: true
+    secrets:
+      CODECOV_TOKEN:
+        description: 'Codecov token for coverage upload'
+        required: false
+
+env:
+  # NOTE: Do NOT set FORCE_COLOR=1 here - it breaks pytest-xdist's execnet
+  # subprocess communication which expects plain output during bootstrap
+  UV_SYSTEM_PYTHON: "1"
+
+jobs:
+  # ==================================================================================
+  # 🔧 Code Quality & Type Checking
+  # ==================================================================================
+  quality:
+    name: 🔧 Code Quality
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: uv sync --group dev
+
+      - name: 🎨 Check formatting with Ruff
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/quality/run-ruff-format.sh "${{ inputs.source-paths }}" true
+
+      - name: 🔍 Lint with Ruff
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/quality/run-ruff-lint.sh "${{ inputs.source-paths }}" false
+
+      - name: 🔒 Type check with MyPy
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/quality/run-mypy.sh src/ false || true
+
+  # ==================================================================================
+  # 🧪 Tests - Platform Matrix
+  # ==================================================================================
+  test:
+    name: 🧪 Tests (linux_amd64, py${{ matrix.python-version }})
+    needs: quality
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: uv sync --group dev
+
+      - name: 🧪 Run Tests
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel-testing }}
+
+      - name: 📤 Upload Coverage
+        if: inputs.upload-coverage
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-linux_amd64-py${{ matrix.python-version }}
+
+  # Additional platform tests (standard/full presets)
+  test-linux-arm:
+    name: 🧪 Tests (linux_arm64, py${{ matrix.python-version }})
+    needs: quality
+    if: inputs.platform-preset == 'standard' || inputs.platform-preset == 'full'
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: uv sync --group dev
+
+      - name: 🧪 Run Tests
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel-testing }}
+
+  test-macos-arm:
+    name: 🧪 Tests (darwin_arm64, py${{ matrix.python-version }})
+    needs: quality
+    if: inputs.platform-preset == 'standard' || inputs.platform-preset == 'full'
+    runs-on: macos-15
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: uv sync --group dev
+
+      - name: 🧪 Run Tests
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel-testing }}
+
+  test-macos-intel:
+    name: 🧪 Tests (darwin_amd64, py${{ matrix.python-version }})
+    needs: quality
+    if: inputs.platform-preset == 'standard' || inputs.platform-preset == 'full'
+    runs-on: macos-15-intel
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: uv sync --group dev
+
+      - name: 🧪 Run Tests
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel-testing }}
+
+  # Windows tests (full preset or include-windows)
+  test-windows:
+    name: 🧪 Tests (windows_amd64, py${{ matrix.python-version }})
+    needs: quality
+    if: inputs.platform-preset == 'full' || inputs.include-windows
+    runs-on: windows-2022
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: uv sync --group dev
+
+      - name: 🧪 Run Tests
+        shell: pwsh
+        run: |
+          .venv\Scripts\Activate.ps1
+          pytest ${{ inputs.test-directory }} -v --tb=short
+
+  test-windows-arm:
+    name: 🧪 Tests (windows_arm64, py${{ matrix.python-version }})
+    needs: quality
+    if: inputs.platform-preset == 'full' || inputs.include-windows
+    runs-on: windows-11-arm
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: uv sync --group dev
+
+      - name: 🧪 Run Tests
+        shell: pwsh
+        run: |
+          .venv\Scripts\Activate.ps1
+          pytest ${{ inputs.test-directory }} -v --tb=short
+
+  # ==================================================================================
+  # 🔒 Security Scanning
+  # ==================================================================================
+  security:
+    name: 🔒 Security
+    needs: quality
+    if: inputs.run-security
+    runs-on: ubuntu-24.04
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@v4
+        with:
+          repository: provide-io/ci-tooling
+          ref: v0
+          path: .ci-tooling
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: |
+          uv sync --group dev
+          source .venv/bin/activate
+          uv pip install bandit pip-audit
+
+      - name: 🔒 Run Bandit security scan
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/security/run-bandit.sh src/ bandit-report.json -ll
+
+      - name: 🔍 Check for known vulnerabilities
+        run: |
+          source .venv/bin/activate
+          .ci-tooling/scripts/security/run-pip-audit.sh pip-audit-report.json
+
+      - name: 📤 Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            pip-audit-report.json
+
+  # ==================================================================================
+  # 🔐 Secret Scanning
+  # ==================================================================================
+  secret-scan:
+    name: 🔐 Secret Scan
+    needs: quality
+    if: inputs.run-secret-scan
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔐 TruffleHog Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+        continue-on-error: true
+
+      - name: 🔐 Gitleaks Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  # ==================================================================================
+  # 📦 Build Package
+  # ==================================================================================
+  build:
+    name: 📦 Build
+    needs: [test, test-linux-arm, test-macos-arm, test-macos-intel]
+    if: always() && needs.test.result == 'success'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: ⚡ Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv-version }}
+          enable-cache: false  # Build doesn't need cache, just runs uv build
+
+      - name: 📦 Build Package
+        run: uv build
+
+      - name: 📤 Upload Dist Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  # ==================================================================================
+  # 📋 CI Summary
+  # ==================================================================================
+  summary:
+    name: 📋 CI Summary
+    needs: [quality, test, test-linux-arm, test-macos-arm, test-macos-intel, test-windows, test-windows-arm, security, secret-scan, build]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 📋 Generate Summary
+        run: |
+          echo "## 🎯 CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Platform Preset:** ${{ inputs.platform-preset }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | ${{ needs.quality.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests (linux_amd64) | ${{ needs.test.result == 'success' && '✅ Passed' || (needs.test.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests (linux_arm64) | ${{ needs.test-linux-arm.result == 'success' && '✅ Passed' || (needs.test-linux-arm.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests (darwin_arm64) | ${{ needs.test-macos-arm.result == 'success' && '✅ Passed' || (needs.test-macos-arm.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests (darwin_amd64) | ${{ needs.test-macos-intel.result == 'success' && '✅ Passed' || (needs.test-macos-intel.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ inputs.platform-preset }}" = "full" ] || [ "${{ inputs.include-windows }}" = "true" ]; then
+            echo "| Tests (windows_amd64) | ${{ needs.test-windows.result == 'success' && '✅ Passed' || (needs.test-windows.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Tests (windows_arm64) | ${{ needs.test-windows-arm.result == 'success' && '✅ Passed' || (needs.test-windows-arm.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || (needs.build.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ inputs.run-security }}" = "true" ]; then
+            echo "| Security | ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ inputs.run-secret-scan }}" = "true" ]; then
+            echo "| Secret Scan | ${{ needs.secret-scan.result == 'success' && '✅ Passed' || '⚠️ Issues' }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Overall status
+          OVERALL="✅ Success"
+          if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.build.result }}" != "success" ]; then
+            OVERALL="❌ Failed"
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Overall Result:** $OVERALL" >> $GITHUB_STEP_SUMMARY
