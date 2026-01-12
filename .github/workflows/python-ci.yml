@@ -93,7 +93,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -144,7 +144,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -193,7 +193,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -232,7 +232,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -271,7 +271,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -311,7 +311,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -351,7 +351,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -393,7 +393,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -467,7 +467,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: false  # Build doesn't need cache, just runs uv build
