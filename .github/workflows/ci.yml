@@ -16,7 +16,7 @@ jobs:
     name: 🎨 Code Quality
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: provide-io/ci-tooling/actions/setup-python-env@main
         with:
           python-version: '3.11'
@@ -43,7 +43,7 @@ jobs:
     needs: quality
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: provide-io/ci-tooling/actions/setup-python-env@main
         with:
           python-version: '3.11'
@@ -67,7 +67,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: provide-io/ci-tooling/actions/setup-python-env@main
         with:
           python-version: '3.11'
