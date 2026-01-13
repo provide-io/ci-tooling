@@ -221,7 +221,7 @@ jobs:
       - name: ✅ Verify TestPyPI Installation
         shell: bash
         run: |
-          source ./workenv/bin/activate
+          source ./.venv/bin/activate
 
           # Get package name and version (simplified)
           WHEEL_FILE=$(ls dist/*.whl | head -1 2>/dev/null || echo "")
