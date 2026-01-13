@@ -1,6 +1,13 @@
 # CI Tooling - GitHub Actions only (no Python package)
 # The Python CLI tools (conform, config-check) have been moved to wrknv.
 
+# Minimal [project] section required for uv sync in test workflows
+[project]
+name = "ci-tooling"
+version = "0.1.0"
+description = "CI/CD tooling and reusable GitHub Actions"
+requires-python = ">=3.11"
+
 # This pyproject.toml is kept for tool configurations used by the examples/tests.
 
 [tool.ruff]
