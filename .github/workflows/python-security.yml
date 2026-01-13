@@ -50,7 +50,7 @@ jobs:
   # ==================================================================================
   static-analysis:
     name: 🔒 Static Analysis
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -61,7 +61,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -102,7 +102,7 @@ jobs:
   # ==================================================================================
   secret-scan:
     name: 🔐 Secret Scan
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -148,7 +148,7 @@ jobs:
   codeql:
     name: 🔬 CodeQL Analysis
     if: inputs.run-codeql
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     permissions:
       security-events: write
       contents: read
@@ -171,7 +171,7 @@ jobs:
     name: 📋 Security Summary
     needs: [static-analysis, secret-scan, codeql]
     if: always()
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - name: 📋 Generate Summary
         run: |
