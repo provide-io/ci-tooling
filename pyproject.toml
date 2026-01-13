@@ -8,6 +8,9 @@ version = "0.1.0"
 description = "CI/CD tooling and reusable GitHub Actions"
 requires-python = ">=3.11"
 
+[dependency-groups]
+dev = []  # Empty - ci-tooling has no Python dependencies
+
 # This pyproject.toml is kept for tool configurations used by the examples/tests.
 
 [tool.ruff]
