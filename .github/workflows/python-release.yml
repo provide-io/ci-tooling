@@ -107,6 +107,7 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
           uv-version: ${{ inputs.uv-version }}
+          install-group: ''  # Build doesn't need dev dependencies
 
       - name: 🏗️ Build Package
         uses: provide-io/ci-tooling/actions/python-build@main
