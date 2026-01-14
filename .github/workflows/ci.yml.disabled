@@ -23,19 +23,19 @@ jobs:
           install-extras: 'dev'
       - name: 📦 Install Quality Tools
         run: |
-          source workenv/bin/activate
+          source .venv/bin/activate
           pip install ruff mypy
       - name: 🎨 Ruff Format Check
         run: |
-          source workenv/bin/activate
+          source .venv/bin/activate
           ruff format . --check || echo "Format check completed"
       - name: 🔍 Ruff Lint Check
         run: |
-          source workenv/bin/activate
+          source .venv/bin/activate
           ruff check . || echo "Lint check completed"
       - name: 🏷️ MyPy Type Check
         run: |
-          source workenv/bin/activate
+          source .venv/bin/activate
           mypy src || echo "Type check completed"
 
   test:
@@ -50,15 +50,15 @@ jobs:
           install-extras: 'dev'
       - name: 📦 Install Test Tools
         run: |
-          source workenv/bin/activate
+          source .venv/bin/activate
           pip install pytest pytest-cov coverage
       - name: 🧪 Run Tests
         run: |
-          source workenv/bin/activate
+          source .venv/bin/activate
           pytest --cov=src --cov-report=xml --cov-report=term-missing || echo "Tests completed"
       - name: 📊 Check Coverage
         run: |
-          source workenv/bin/activate
+          source .venv/bin/activate
           coverage report --fail-under=80 || echo "Coverage check completed"
 
   release:
@@ -73,7 +73,7 @@ jobs:
           python-version: '3.11'
       - name: 📦 Build Package
         run: |
-          source workenv/bin/activate
+          source .venv/bin/activate
           uv build || echo "Build completed"
       - name: 📤 Release Package
         uses: provide-io/ci-tooling/actions/python-release@main

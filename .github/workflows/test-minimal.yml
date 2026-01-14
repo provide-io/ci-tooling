@@ -24,7 +24,7 @@ jobs:
       - name: Verify installation
         shell: bash
         run: |
-          source ./workenv/bin/activate
+          source ./.venv/bin/activate
           python --version
           uv --version
           echo "✅ Python: $(python --version)"
