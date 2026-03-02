@@ -415,7 +415,7 @@ jobs:
           .ci-tooling/scripts/security/run-pip-audit.sh pip-audit-report.json
 
       - name: 📤 Upload security reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: security-reports
@@ -476,7 +476,7 @@ jobs:
         run: uv build
 
       - name: 📤 Upload Dist Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
