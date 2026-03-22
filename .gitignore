@@ -48,3 +48,6 @@ bf-*.txt
 *.tfstate.*
 .terraform/
 .terraform.lock.hcl
+
+# Local act CI config (machine-specific)
+.actrc
