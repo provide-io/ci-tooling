@@ -345,5 +345,28 @@ jobs:
         run: |
           echo "## 🚧 Publishing Gate" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Build and GitHub Release completed successfully." >> $GITHUB_STEP_SUMMARY
-          echo "Artifacts are ready for publishing by the calling workflow." >> $GITHUB_STEP_SUMMARY
+
+          # Get package info (reuse previous logic)
+          WHEEL_FILE=$(ls dist/*.whl | head -1 2>/dev/null || echo "")
+          if [ -n "$WHEEL_FILE" ]; then
+            PACKAGE_INFO=$(python3 -c 'import re,sys,os; f=os.path.basename(sys.argv[1]); m=re.match(r"^([^-]+)-([^-]+)", f); print(f"{m.group(1)} {m.group(2)}" if m else "unknown 0.0.0")' "$WHEEL_FILE")
+          else
+            PACKAGE_INFO="unknown 0.0.0"
+          fi
+
+          if [ -n "$PACKAGE_INFO" ]; then
+            PACKAGE_NAME=$(echo "$PACKAGE_INFO" | cut -d' ' -f1)
+            PACKAGE_VERSION=$(echo "$PACKAGE_INFO" | cut -d' ' -f2)
+
+            echo "**Package:** $PACKAGE_NAME" >> $GITHUB_STEP_SUMMARY
+            echo "**Version:** $PACKAGE_VERSION" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 📦 Installation" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "pip install $PACKAGE_NAME==$PACKAGE_VERSION" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
+            echo "- [PyPI Package](https://pypi.org/project/$PACKAGE_NAME/$PACKAGE_VERSION/)" >> $GITHUB_STEP_SUMMARY
+            echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v$PACKAGE_VERSION)" >> $GITHUB_STEP_SUMMARY
+          fi
