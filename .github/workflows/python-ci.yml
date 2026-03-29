@@ -78,10 +78,10 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 📥 Checkout ci-tooling
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: provide-io/ci-tooling
           ref: v0
@@ -93,7 +93,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -130,10 +130,10 @@ jobs:
         python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 📥 Checkout ci-tooling
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: provide-io/ci-tooling
           ref: v0
@@ -145,7 +145,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -160,7 +160,7 @@ jobs:
 
       - name: 📤 Upload Coverage
         if: inputs.upload-coverage && github.actor != 'nektos/act'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
@@ -179,10 +179,10 @@ jobs:
         python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 📥 Checkout ci-tooling
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: provide-io/ci-tooling
           ref: v0
@@ -194,7 +194,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -218,10 +218,10 @@ jobs:
         python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 📥 Checkout ci-tooling
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: provide-io/ci-tooling
           ref: v0
@@ -233,7 +233,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -257,10 +257,10 @@ jobs:
         python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 📥 Checkout ci-tooling
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: provide-io/ci-tooling
           ref: v0
@@ -272,7 +272,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -297,10 +297,10 @@ jobs:
         python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 📥 Checkout ci-tooling
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: provide-io/ci-tooling
           ref: v0
@@ -312,7 +312,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -337,10 +337,10 @@ jobs:
         python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 📥 Checkout ci-tooling
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: provide-io/ci-tooling
           ref: v0
@@ -352,7 +352,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -379,10 +379,10 @@ jobs:
       contents: read
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 📥 Checkout ci-tooling
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: provide-io/ci-tooling
           ref: v0
@@ -394,7 +394,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
@@ -434,7 +434,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -460,7 +460,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
@@ -468,7 +468,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
 
       - name: ⚡ Install UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: false  # Build doesn't need cache, just runs uv build
