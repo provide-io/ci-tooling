@@ -38,10 +38,6 @@ inputs:
     description: 'Mark as prerelease'
     required: false
     default: 'false'
-  workenv-path:
-    description: 'Path to workenv directory'
-    required: false
-    default: '.venv'
   artifacts-path:
     description: 'Path to build artifacts'
     required: false
@@ -72,43 +68,19 @@ runs:
       id: version
       shell: bash
       run: |
-        source "${{ inputs.workenv-path }}/bin/activate"
-
-        # Extract version using dedicated script
         VERSION=$(python3 "${{ github.action_path }}/../../scripts/extract_version.py" "${{ inputs.artifacts-path }}")
 
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "📦 Release version: $VERSION"
 
-    # Removed twine installation - using official PyPA action instead
-
-    - name: ✅ Verify package metadata
-      if: inputs.verify-metadata == 'true'
-      shell: bash
-      run: |
-        source "${{ inputs.workenv-path }}/bin/activate"
-
-        echo "✅ Verifying package metadata..."
-
-        # Check packages with twine
-        twine check "${{ inputs.artifacts-path }}"/*
-
-        echo "✅ Package metadata verification passed"
-
     - name: 📤 Dry Run Validation
       if: inputs.dry-run == 'true'
       shell: bash
       run: |
-        source "${{ inputs.workenv-path }}/bin/activate"
-
         echo "🧪 DRY RUN: Would upload packages to PyPI..."
         echo "Repository: ${{ inputs.repository-url }}"
         echo "Packages that would be uploaded:"
         ls -la "${{ inputs.artifacts-path }}"/*
-
-        # Check packages without uploading
-        echo "✅ Package validation (dry-run):"
-        twine check "${{ inputs.artifacts-path }}"/*
         echo "✅ Dry run completed successfully"
 
     - name: 📤 Upload to PyPI
@@ -126,9 +98,6 @@ runs:
       id: set-url
       shell: bash
       run: |
-        source "${{ inputs.workenv-path }}/bin/activate"
-
-        # Construct PyPI URL
         PACKAGE_NAME=$(python3 "${{ github.action_path }}/../../scripts/extract_package_name.py" "${{ inputs.artifacts-path }}")
         PYPI_URL="https://pypi.org/project/$PACKAGE_NAME/${{ steps.version.outputs.version }}/"
         echo "url=$PYPI_URL" >> $GITHUB_OUTPUT
