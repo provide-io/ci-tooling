@@ -41,10 +41,6 @@ inputs:
     description: 'Mark as prerelease'
     required: false
     default: 'false'
-  workenv-path:
-    description: 'Path to workenv directory'
-    required: false
-    default: '.venv'
   artifacts-path:
     description: 'Path to build artifacts'
     required: false
