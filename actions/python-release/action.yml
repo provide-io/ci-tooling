@@ -41,7 +41,7 @@ inputs:
   workenv-path:
     description: 'Path to workenv directory'
     required: false
-    default: './workenv'
+    default: '.venv'
   artifacts-path:
     description: 'Path to build artifacts'
     required: false
