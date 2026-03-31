@@ -199,6 +199,9 @@ jobs:
     if: inputs.test-repository && inputs.publish-testpypi && needs.github-release.result == 'success'
     runs-on: ubuntu-24.04
     environment: testpypi
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v6
@@ -215,19 +218,16 @@ jobs:
           name: release-artifacts
           path: dist/
 
-      - name: 🧪 Test Release to TestPyPI
-        uses: provide-io/ci-tooling/actions/python-release@main
+      - name: 🧪 Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          pypi-token: ${{ secrets.TEST_PYPI_TOKEN }}
           repository-url: 'https://test.pypi.org/legacy/'
-          create-github-release: false
+          packages-dir: dist/
           skip-existing: true
 
       - name: ✅ Verify TestPyPI Installation
         shell: bash
         run: |
-          source ./.venv/bin/activate
-
           # Get package name and version (simplified)
           WHEEL_FILE=$(ls dist/*.whl | head -1 2>/dev/null || echo "")
           if [ -n "$WHEEL_FILE" ]; then
