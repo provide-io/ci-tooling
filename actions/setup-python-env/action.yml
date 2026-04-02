@@ -47,13 +47,13 @@ runs:
   steps:
     - name: 🐍 Setup Python
       id: python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
       with:
         python-version: ${{ inputs.python-version }}
 
     - name: ⚡ Install UV
       id: uv
-      uses: astral-sh/setup-uv@v7
+      uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57  # v8.0.0
       with:
         version: ${{ inputs.uv-version }}
         enable-cache: ${{ inputs.cache-dependencies }}
@@ -73,7 +73,7 @@ runs:
     - name: 🔑 Setup dependency cache
       id: cache
       if: inputs.cache-dependencies == 'true'
-      uses: actions/cache@v4
+      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
       with:
         path: |
           ~/.cache/uv
