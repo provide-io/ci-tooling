@@ -65,7 +65,7 @@ jobs:
 | Input | Type | Description | Default |
 |-------|------|-------------|---------|
 | `python-version` | string | Python version to use | `'3.11'` |
-| `uv-version` | string | UV version to use | `'0.7.8'` |
+| `uv-version` | string | UV version to use | `'0.11.3'` |
 | `test-directory` | string | Test directory | `'tests/'` |
 | `coverage-threshold` | number | Coverage threshold | `80` |
 | `skip-tests` | boolean | Skip test job | `false` |
