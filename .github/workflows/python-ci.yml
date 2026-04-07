@@ -10,7 +10,7 @@ on:
       uv-version:
         description: 'UV version to use'
         type: string
-        default: '0.9.13'
+        default: '0.11.3'
       source-paths:
         description: 'Source paths for quality checks'
         type: string

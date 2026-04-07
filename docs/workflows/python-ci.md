@@ -57,7 +57,7 @@ jobs:
 | Input | Type | Description | Default |
 |-------|------|-------------|---------|
 | `python-version` | string | Python version to use | `'3.11'` |
-| `uv-version` | string | UV version to use | `'0.7.8'` |
+| `uv-version` | string | UV version to use | `'0.11.3'` |
 | `source-paths` | string | Source paths for quality checks | `'src/ tests/'` |
 | `test-directory` | string | Test directory | `'tests/'` |
 | `coverage-threshold` | number | Coverage threshold percentage | `80` |
