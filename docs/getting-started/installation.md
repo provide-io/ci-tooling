@@ -163,7 +163,7 @@ Update version tags in workflow files:
 ## Requirements
 
 - **Python**: 3.11 or higher
-- **UV**: 0.7.8 or higher (for actions)
+- **UV**: 0.11.3 or higher (for actions)
 - **Git**: For pre-commit hooks
 - **GitHub**: For GitHub Actions
 
