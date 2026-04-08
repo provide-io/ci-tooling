@@ -56,7 +56,7 @@ This composite action configures a complete Python development environment:
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
 | `python-version` | Python version to install | No | `'3.11'` |
-| `uv-version` | UV package manager version | No | `'0.7.8'` |
+| `uv-version` | UV package manager version | No | `'0.11.3'` |
 | `workenv-path` | Path to create workenv directory | No | `'./workenv'` |
 | `cache-dependencies` | Enable dependency caching | No | `'true'` |
 | `install-extras` | Package extras to install (comma-separated) | No | `'dev'` |
@@ -234,7 +234,7 @@ Pin to specific UV version if needed:
 ```yaml
 - uses: provide-io/ci-tooling/actions/setup-python-env@v0.0.1
   with:
-    uv-version: '0.7.8'
+    uv-version: '0.11.3'
 ```
 
 ## Requirements

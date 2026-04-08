@@ -344,7 +344,7 @@ def test_ci_tooling_comprehensive():
                 'name': 'setup-python-env',
                 'inputs': {
                     'python-version': '3.11',
-                    'uv-version': '0.7.8'
+                    'uv-version': '0.11.3'
                 },
                 'matrix': [
                     {'python-version': '3.11'},

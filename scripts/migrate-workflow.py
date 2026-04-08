@@ -270,7 +270,7 @@ class WorkflowMigrator:
                         {"uses": "actions/checkout@v4"},
                         {
                             "uses": self.shared_actions["setup-python"],
-                            "with": {"python-version": "3.11", "uv-version": "0.7.8"},
+                            "with": {"python-version": "3.11", "uv-version": "0.11.3"},
                         },
                         {"uses": self.shared_actions["python-quality"]},
                     ],
@@ -283,7 +283,7 @@ class WorkflowMigrator:
                         {"uses": "actions/checkout@v4"},
                         {
                             "uses": self.shared_actions["setup-python"],
-                            "with": {"python-version": "3.11", "uv-version": "0.7.8"},
+                            "with": {"python-version": "3.11", "uv-version": "0.11.3"},
                         },
                         {
                             "uses": self.shared_actions["python-test"],

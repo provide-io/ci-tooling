@@ -25,7 +25,7 @@ jobs:
         uses: ./actions/setup-python-env
         with:
           python-version: '3.11'
-          uv-version: '0.7.8'
+          uv-version: '0.11.3'
           cache-dependencies: false
 
       - name: ✅ Verify installation

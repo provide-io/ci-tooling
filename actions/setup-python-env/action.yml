@@ -10,7 +10,7 @@ inputs:
   uv-version:
     description: 'UV package manager version'
     required: false
-    default: '0.7.8'
+    default: '0.11.3'
   workenv-path:
     description: 'Path to virtual environment directory'
     required: false
