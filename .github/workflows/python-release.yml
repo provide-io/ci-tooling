@@ -10,7 +10,7 @@ on:
       uv-version:
         description: 'UV version to use'
         type: string
-        default: '0.7.8'
+        default: '0.11.3'
       build-backend:
         description: 'Build backend (uv, build)'
         type: string
