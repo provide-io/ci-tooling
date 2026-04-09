@@ -11,7 +11,6 @@ jobs:
     with:
       python-version: '3.11'
       run-tests: true
-      test-repository: false
     secrets:
       PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
