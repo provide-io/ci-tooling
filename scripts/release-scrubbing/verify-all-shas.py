@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 """Verify every hash in every realigned summaries.jsonl resolves in its repo."""
 from __future__ import annotations
 

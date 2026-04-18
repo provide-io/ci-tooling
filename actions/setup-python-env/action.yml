@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 name: 'Setup Python Environment'
 description: 'Setup Python, UV, and workenv for provide.io projects'
 author: 'provide.io llc'

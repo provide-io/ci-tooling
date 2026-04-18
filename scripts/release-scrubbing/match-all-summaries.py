@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 """Run match-on-message remapping for any repo whose summaries.jsonl has stale SHAs.
 
 For each repo, if the current jsonl has entries whose hashes don't resolve,

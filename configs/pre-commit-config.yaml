@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 # Standard pre-commit configuration for provide.io projects
 # This file should be copied to .pre-commit-config.yaml in your project root
 #

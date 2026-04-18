@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 set -euo pipefail
 
 # Run CI tasks using wrknv if available, otherwise fall back to manual commands

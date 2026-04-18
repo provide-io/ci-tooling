@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 """Scan repo history for release-sensitive content: emails, internal domains,
 name variants, internal URLs, private IPs, absolute file:// URLs.
 

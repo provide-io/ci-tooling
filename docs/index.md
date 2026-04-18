@@ -159,4 +159,4 @@ Start simple and add features as needed:
 
 ## License
 
-Apache-2.0 - Copyright (c) 2025 provide.io llc
+MIT - Copyright (c) 2026 provide.io llc
