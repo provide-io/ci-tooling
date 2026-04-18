@@ -19,6 +19,8 @@ REPOS = [
     "provide-terminal", "provide-testkit", "provide-workspace",
     "pyvider", "pyvider-components", "pyvider-cty", "pyvider-hcl",
     "pyvider-rpcplugin", "pyvider-schema", "pyvider-telemetry", "wrknv",
+    "flavorpack", "terraform-provider-pyvider", "terraform-provider-tofusoup",
+    "ci-tooling", "plating", "supsrc", "tofusoup", "tfdev",
 ]
 
 DATE_WINDOW_DAYS = 7
