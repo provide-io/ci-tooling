@@ -1,0 +1,2 @@
+# Release-scrubbing playbook contains literal example patterns for docs
+scripts/release-scrubbing/README\.md$
