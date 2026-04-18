@@ -124,3 +124,7 @@ vendor/
 env.sh
 env.ps1
 
+
+# Session bfile scratch
+*bfile*
+bf*.txt
