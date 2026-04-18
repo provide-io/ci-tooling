@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: Copyright (c) provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 
 """Add SPDX copyright headers to Python files.
 
@@ -18,7 +18,7 @@ from pathlib import Path
 
 HEADER_LINES = [
     "# SPDX-FileCopyrightText: Copyright (c) provide.io llc. All rights reserved.",
-    "# SPDX-License-Identifier: Apache-2.0",
+    "# SPDX-License-Identifier: MIT",
 ]
 
 EXCLUDED_PATTERNS = [
@@ -37,7 +37,7 @@ def check_header_correctness(content: str) -> tuple[bool, str]:
 
     # Check for SPDX format
     has_spdx = any("SPDX-FileCopyrightText" in line for line in lines)
-    has_license = any("SPDX-License-Identifier: Apache-2.0" in line for line in lines)
+    has_license = any("SPDX-License-Identifier: MIT" in line for line in lines)
 
     if not has_spdx or not has_license:
         return False, "Missing SPDX tags or incorrect license"

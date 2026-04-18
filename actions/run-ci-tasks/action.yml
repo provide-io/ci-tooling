@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 name: 'Run CI Tasks'
 description: 'Run CI using wrknv if available, otherwise manual commands'
 author: 'provide.io llc'

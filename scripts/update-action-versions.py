@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 """Update GitHub Action versions and pre-commit hook versions from centralized pins.
 
 Reads action-versions.yml and applies SHA-pinned versions to workflow files

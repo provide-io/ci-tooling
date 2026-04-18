@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 # CI Tooling - GitHub Actions only (no Python package)
 # The Python CLI tools (conform, config-check) have been moved to wrknv.
 
@@ -6,7 +9,29 @@
 name = "ci-tooling"
 version = "0.1.0"
 description = "CI/CD tooling and reusable GitHub Actions"
+readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+authors = [
+    { name = "provide.io", email = "code@provide.io" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.urls]
+Homepage = "https://github.com/provide-io/ci-tooling"
+Repository = "https://github.com/provide-io/ci-tooling"
+Issues = "https://github.com/provide-io/ci-tooling/issues"
 
 [dependency-groups]
 dev = [

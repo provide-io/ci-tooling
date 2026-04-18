@@ -62,7 +62,7 @@ def my_function():
 
 # After commit (auto-fixed)
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 #
 
 """TODO: Add module docstring."""

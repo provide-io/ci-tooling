@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 """Scan every blob + commit message for absolute filesystem paths.
 
 Flags content like /Users/<name>/..., /home/<name>/..., C:\\Users\\<name>\\...,

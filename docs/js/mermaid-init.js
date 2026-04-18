@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+// SPDX-License-Identifier: MIT
+
 // Initialize Mermaid for diagram rendering
 // Provide.io shared configuration
 document$.subscribe(function() {

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 """Run scan-paths + scan-release-sensitive checks + trufflehog + CoA/binary
 checks against every purged repo. Report cleanly."""
 from __future__ import annotations

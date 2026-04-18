@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 """Realign ../<repo>.summaries.jsonl after a filter-repo purge.
 
 - Remaps each `hash` via .git/filter-repo/commit-map (original -> new SHA).

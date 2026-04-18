@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: Copyright (c) provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 
 """Validate that all Python source files have SPDX copyright headers.
 
@@ -42,7 +42,7 @@ def check_file_has_header(file_path: Path) -> bool:
     lines = content.split("\n")[:15]
 
     has_copyright = any("SPDX-FileCopyrightText" in line for line in lines)
-    has_license = any("SPDX-License-Identifier: Apache-2.0" in line for line in lines)
+    has_license = any("SPDX-License-Identifier: MIT" in line for line in lines)
 
     return has_copyright and has_license
 

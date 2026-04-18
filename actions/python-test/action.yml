@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 name: 'Python Tests'
 description: 'Run pytest with coverage'
 author: 'provide.io llc'
