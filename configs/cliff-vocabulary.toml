@@ -62,7 +62,8 @@ commit_parsers = [
 commit_preprocessors = [
   { pattern = '^\s*Co-Authored-By:.*$', replace = "" },
   { pattern = '\(cherry picked from commit [0-9a-f]{7,}\)', replace = "" },
-  { pattern = '\s+', replace = " " },
+  # Collapse runs of spaces/tabs — but NOT newlines (so split(pat="\n") | first still works).
+  { pattern = '[ \t]+', replace = " " },
 ]
 
 tag_pattern = "v[0-9].*|^(go|rust|py|node)/.*v[0-9].*"
