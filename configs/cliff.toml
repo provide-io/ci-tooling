@@ -1,0 +1,96 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: MIT
+#
+# Shared git-cliff configuration for the provide.io ecosystem.
+# Usage:
+#   cd <any-provide-io-repo>
+#   git cliff --config <path-to-this-file>/cliff.toml -o CHANGELOG.md
+#
+# Or via scripts/generate-changelogs.sh which runs this across all sibling repos.
+
+[changelog]
+header = """
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+"""
+
+body = """
+{% if version -%}
+## [{{ version | trim_start_matches(pat="v") }}] — {{ timestamp | date(format="%Y-%m-%d") }}
+{% else -%}
+## [Unreleased]
+{% endif -%}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}
+- {% if commit.scope %}**{{ commit.scope }}**: {% endif %}{{ commit.message | upper_first }}\
+{% endfor %}
+{% endfor %}\n
+"""
+
+footer = ""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+protect_breaking_commits = true
+sort_commits = "oldest"
+topo_order = false
+
+# Include the commit subject only; omit body.
+commit_parsers = [
+  # Breaking changes first
+  { message = "^[a-zA-Z]+(\\(.+\\))?!:", group = "Breaking Changes" },
+
+  # Standard conventional-commit categories
+  { message = "^feat", group = "Features" },
+  { message = "^fix", group = "Fixes" },
+  { message = "^perf", group = "Performance" },
+  { message = "^refactor", group = "Refactors" },
+  { message = "^test", group = "Tests" },
+  { message = "^docs", group = "Documentation" },
+  { message = "^style", group = "Style" },
+  { message = "^build", group = "Build" },
+  { message = "^ci", group = "CI" },
+  { message = "^revert", group = "Reverts" },
+
+  # provide.io ecosystem vocabulary (repogerbil analyzer categories)
+  { message = "^instantiate", group = "Features" },
+  { message = "^scaffold", group = "Features" },
+  { message = "^interface", group = "Features" },
+  { message = "^baseline", group = "Features" },
+  { message = "^specify", group = "Documentation" },
+  { message = "^qualify", group = "Tests" },
+  { message = "^harden", group = "Security & Resilience" },
+  { message = "^remediate", group = "Fixes" },
+  { message = "^streamline", group = "Refactors" },
+  { message = "^decouple", group = "Refactors" },
+
+  # Chore bucket last (absorbs everything not matched above)
+  { message = "^chore", group = "Chores" },
+  { message = ".*", group = "Other" },
+]
+
+# Drop auto-commit noise that made it through the scrubbing net (defensive).
+commit_preprocessors = [
+  { pattern = '\s+', replace = " " },
+  { pattern = '^\s*Co-Authored-By:.*$', replace = "" },
+  { pattern = '\(cherry picked from commit [0-9a-f]{7,}\)', replace = "" },
+]
+
+# Match version tags only (v0.3.21, v1.0.0-beta, go/logger/v0.3.0 etc.).
+tag_pattern = "v[0-9].*|^(go|rust|py|node)/.*v[0-9].*"
+
+# Don't generate entries for repogerbil "checkpoint" commits or bulk updates —
+# they add noise without meaningful per-version info.
+skip_tags = "^(?:.*-dev\\..*|checkpoint.*)$"
+
+# Ignore tags that don't correspond to published releases.
+ignore_tags = ""
