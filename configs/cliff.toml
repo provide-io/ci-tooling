@@ -1,12 +1,17 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: MIT
 #
-# Shared git-cliff configuration for the provide.io ecosystem.
-# Usage:
-#   cd <any-provide-io-repo>
-#   git cliff --config <path-to-this-file>/cliff.toml -o CHANGELOG.md
+# Default git-cliff config for the provide.io ecosystem.
+# Style: terse / consumer-facing. Subject-only entries, standard Keep-a-Changelog
+# groups (Features / Fixes / Security / Performance / Refactors / Tests / Docs),
+# dependency-bump noise suppressed.
 #
-# Or via scripts/generate-changelogs.sh which runs this across all sibling repos.
+# For the richer team-facing format (repogerbil semantic groups, emoji prefixes,
+# descriptions), use configs/cliff-vocabulary.toml instead.
+#
+# Usage:
+#   git cliff --config /path/to/ci-tooling/configs/cliff.toml -o CHANGELOG.md
+#   scripts/generate-changelogs.sh [<repo>...]
 
 [changelog]
 header = """
@@ -28,7 +33,7 @@ body = """
 {% for group, commits in commits | group_by(attribute="group") %}
 ### {{ group | upper_first }}
 {% for commit in commits %}
-- {% if commit.scope %}**{{ commit.scope }}**: {% endif %}{{ commit.message | upper_first }}\
+- {% if commit.scope %}`{{ commit.scope }}`: {% endif %}{{ commit.message | split(pat="\n") | first | upper_first }}\
 {% endfor %}
 {% endfor %}\n
 """
@@ -42,55 +47,29 @@ filter_unconventional = true
 split_commits = false
 protect_breaking_commits = true
 sort_commits = "oldest"
-topo_order = false
 
-# Include the commit subject only; omit body.
 commit_parsers = [
-  # Breaking changes first
   { message = "^[a-zA-Z]+(\\(.+\\))?!:", group = "Breaking Changes" },
-
-  # Standard conventional-commit categories
-  { message = "^feat", group = "Features" },
-  { message = "^fix", group = "Fixes" },
+  { message = "^feat|^instantiate|^scaffold|^baseline|^interface", group = "Features" },
+  { message = "^fix|^remediate", group = "Fixes" },
+  { message = "^harden", group = "Security" },
   { message = "^perf", group = "Performance" },
-  { message = "^refactor", group = "Refactors" },
-  { message = "^test", group = "Tests" },
-  { message = "^docs", group = "Documentation" },
-  { message = "^style", group = "Style" },
-  { message = "^build", group = "Build" },
-  { message = "^ci", group = "CI" },
+  { message = "^refactor|^streamline|^decouple", group = "Refactors" },
+  { message = "^test|^qualify", group = "Tests" },
+  { message = "^docs|^specify", group = "Documentation" },
   { message = "^revert", group = "Reverts" },
-
-  # provide.io ecosystem vocabulary (repogerbil analyzer categories)
-  { message = "^instantiate", group = "Features" },
-  { message = "^scaffold", group = "Features" },
-  { message = "^interface", group = "Features" },
-  { message = "^baseline", group = "Features" },
-  { message = "^specify", group = "Documentation" },
-  { message = "^qualify", group = "Tests" },
-  { message = "^harden", group = "Security & Resilience" },
-  { message = "^remediate", group = "Fixes" },
-  { message = "^streamline", group = "Refactors" },
-  { message = "^decouple", group = "Refactors" },
-
-  # Chore bucket last (absorbs everything not matched above)
-  { message = "^chore", group = "Chores" },
-  { message = ".*", group = "Other" },
+  # Drop dependency-bump noise entirely — nobody reads `chore(ci): bump X from Y to Z`.
+  { message = "^chore\\(ci\\): bump ", skip = true },
+  { message = "^chore\\(deps\\): bump ", skip = true },
+  { message = "^build\\(deps\\): bump ", skip = true },
+  # Drop remaining ci / chore bookkeeping
+  { message = "^ci|^chore|^build|^style", skip = true },
 ]
 
-# Drop auto-commit noise that made it through the scrubbing net (defensive).
 commit_preprocessors = [
-  { pattern = '\s+', replace = " " },
   { pattern = '^\s*Co-Authored-By:.*$', replace = "" },
   { pattern = '\(cherry picked from commit [0-9a-f]{7,}\)', replace = "" },
+  { pattern = '\s+', replace = " " },
 ]
 
-# Match version tags only (v0.3.21, v1.0.0-beta, go/logger/v0.3.0 etc.).
 tag_pattern = "v[0-9].*|^(go|rust|py|node)/.*v[0-9].*"
-
-# Don't generate entries for repogerbil "checkpoint" commits or bulk updates —
-# they add noise without meaningful per-version info.
-skip_tags = "^(?:.*-dev\\..*|checkpoint.*)$"
-
-# Ignore tags that don't correspond to published releases.
-ignore_tags = ""
