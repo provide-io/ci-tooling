@@ -5,6 +5,14 @@
 # The Python CLI tools (conform, config-check) have been moved to wrknv.
 
 # Minimal [project] section required for uv sync in test workflows
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = []
+packages = []
+
 [project]
 name = "ci-tooling"
 version = "0.1.0"
