@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: MIT
+
+version = 1
+
+# Covers files without inline SPDX headers. This repo is MIT-licensed.
+[[annotations]]
+path = "**"
+SPDX-FileCopyrightText = "Copyright (c) 2026 provide.io llc"
+SPDX-License-Identifier = "MIT"
