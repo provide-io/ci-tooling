@@ -26,20 +26,20 @@ git for-each-ref --format='%(refname)'
 Scan `/tmp/all-paths.txt` for:
 
 1. **Secrets/keys:** `*.pem *.key *.p12 *.pfx id_rsa* .env .netrc .pypirc .aws/ credentials*`
-2. **Binaries/archives:** `*.exe *.dll *.so *.dylib *.pyc *.whl *.tar.gz *.dmg *.pkg`
-3. **Committed venvs:** `bin/ lib/python*/ .venv/ pyvenv.cfg site-packages/`
-4. **Build outputs:** `build/ dist/ *.egg-info/ site/ htmlcov/ cover/`
-5. **Caches:** `__pycache__/ .pytest_cache/ .mypy_cache/ .ruff_cache/ .coverage`
-6. **Generated outputs:** whatever your tool generates (e.g. wrknv: `env.sh env.ps1`)
-7. **Editor detritus:** `*.bak *.bak2 *.swp *.orig *.old *~`
-8. **Session dumps:** `TODO.md NOTES.md SESSION_STATUS.md *SUMMARY*.md ARCHITECTURE*.md` at repo root
-9. **Timestamped logs:** `20250818-*.txt` etc.
-10. **Legacy pre-rename trees:** if repo was renamed (`src/oldname/`), whole old tree often lingers
-11. **WIP filename variants:** `*_new.py *_v2.py *.copy`
-12. **Ad-hoc top-level scripts:** `fix_*.py migrate_*.py validate_*.py original_*.py`
-13. **Archive/stale dirs:** `docs/archive/ docs/stale/ archive/ scraps/`
-14. **Local config leaks:** `.claude/ .coverage .env.local *.local.json`
-15. **Legacy rename remnants:** old project name in config files
+1. **Binaries/archives:** `*.exe *.dll *.so *.dylib *.pyc *.whl *.tar.gz *.dmg *.pkg`
+1. **Committed venvs:** `bin/ lib/python*/ .venv/ pyvenv.cfg site-packages/`
+1. **Build outputs:** `build/ dist/ *.egg-info/ site/ htmlcov/ cover/`
+1. **Caches:** `__pycache__/ .pytest_cache/ .mypy_cache/ .ruff_cache/ .coverage`
+1. **Generated outputs:** whatever your tool generates (e.g. wrknv: `env.sh env.ps1`)
+1. **Editor detritus:** `*.bak *.bak2 *.swp *.orig *.old *~`
+1. **Session dumps:** `TODO.md NOTES.md SESSION_STATUS.md *SUMMARY*.md ARCHITECTURE*.md` at repo root
+1. **Timestamped logs:** `20250818-*.txt` etc.
+1. **Legacy pre-rename trees:** if repo was renamed (`src/oldname/`), whole old tree often lingers
+1. **WIP filename variants:** `*_new.py *_v2.py *.copy`
+1. **Ad-hoc top-level scripts:** `fix_*.py migrate_*.py validate_*.py original_*.py`
+1. **Archive/stale dirs:** `docs/archive/ docs/stale/ archive/ scraps/`
+1. **Local config leaks:** `.claude/ .coverage .env.local *.local.json`
+1. **Legacy rename remnants:** old project name in config files
 
 Cross-check each candidate: is it currently tracked at HEAD? If yes, don't purge — clean working-tree cruft first instead.
 
@@ -54,6 +54,7 @@ done
 Path-based purging catches files. Content-based scanning catches *strings inside files* — absolute filesystem paths like `/Users/<name>/code/...`, `file:///Users/...`, `/REDACTED_TMP`. These are not secrets but reveal username, directory structure, and sibling-project names. **This kind of cruft must be left out of history.**
 
 Common sources:
+
 - `pyproject.toml` with `file:///Users/.../sibling-pkg` local-sibling refs
 - Session-log txt files capturing shell output
 - Test fixtures / docstrings that hardcoded a dev-machine path
@@ -65,6 +66,7 @@ Use [`scan-paths.py`](./scan-paths.py) to enumerate every blob + commit message 
 - **Class B — path is legitimate at HEAD, only old revisions leak.** Scrub via `--replace-text`.
 
 For Class B, write `/tmp/replacements.txt`:
+
 ```
 regex:/Users/[a-zA-Z][a-zA-Z0-9_.-]+/[A-Za-z0-9_./-]+==>/REDACTED_ABS_PATH
 regex:/home/[a-zA-Z][a-zA-Z0-9_.-]+/[A-Za-z0-9_./-]+==>/REDACTED_ABS_PATH
@@ -74,6 +76,7 @@ regex:/private/var/folders/[A-Za-z0-9_./-]+==>/REDACTED_TMP
 **Regex must handle `.` in usernames.** `/REDACTED_ABS_PATH` is not the same as `/REDACTED_ABS_PATH`. The pattern above accepts both (`[a-zA-Z0-9_.-]+` covers dotted usernames). A narrower `/Users/tim/` won't catch prior-machine paths where the shell user was `tim`.
 
 Then combine with path removal in one filter-repo pass:
+
 ```
 git filter-repo --invert-paths \
     --paths-from-file /tmp/purge-paths.txt \
@@ -126,6 +129,7 @@ return msg.rstrip() + b"\n"
 ```
 
 Common Class D scrubs:
+
 - Strip `Co-Authored-By:` lines (AI-assistance attribution, teammate emails)
 - Rename email addresses inside message bodies to match the canonical author email
 - Drop `Signed-off-by:` for public release if your DCO requirements change
@@ -185,8 +189,8 @@ git filter-repo --invert-paths \
 **Glob pitfalls in filter-repo:**
 
 1. **Top-level files:** `**/*.bak` does NOT match `mkdocs.yml.bak` at repo root. The `**/` prefix requires at least one intermediate directory. Always pair `*.bak` (top-level) with `**/*.bak` (nested).
-2. **No-extension Unix binaries:** Go/Rust compiled executables have no extension (`flavor-go-builder`, `kv-go-client`, etc.). Extension globs miss them entirely. Enumerate their directories explicitly in `--paths-from-file` (e.g. `src/ingredients/bin/`, `tests/kv/bin/`).
-3. **Compressed debug info inside binaries:** committed binaries embed build-machine absolute paths in their debug sections. Even after `--replace-text`, these paths survive because the text is inside binary data. The cure is purging the binary, not scrubbing it.
+1. **No-extension Unix binaries:** Go/Rust compiled executables have no extension (`flavor-go-builder`, `kv-go-client`, etc.). Extension globs miss them entirely. Enumerate their directories explicitly in `--paths-from-file` (e.g. `src/ingredients/bin/`, `tests/kv/bin/`).
+1. **Compressed debug info inside binaries:** committed binaries embed build-machine absolute paths in their debug sections. Even after `--replace-text`, these paths survive because the text is inside binary data. The cure is purging the binary, not scrubbing it.
 
 ```bash
 
@@ -196,6 +200,7 @@ git gc --prune=now --aggressive
 ```
 
 **filter-repo gotchas:**
+
 - Rewrites *all* commit SHAs. No remote push magic — you'd need to coordinate force-push.
 - Only operates on refs it knows about. Non-standard refs (above) survive.
 - Drops commits whose entire content was purged.
@@ -228,7 +233,7 @@ If trufflehog flags findings, check if they're in dangling/preservation commits 
 If you have `repogerbil`-style `../<repo>.summaries.jsonl` files sitting next to each repo, SHAs inside will now be dead. Two parts:
 
 1. **Hash remap** — `.git/filter-repo/commit-map` has columns `old  new`. Rewrite each `"hash"` field via lookup. ~96% will map cleanly; ~4% get dropped (commits that became empty).
-2. **Scrub purged-file references** — remove `changes[]` entries whose `file` is in your purge list. Leave narrative prose unless it's *wholly* about a purged file.
+1. **Scrub purged-file references** — remove `changes[]` entries whose `file` is in your purge list. Leave narrative prose unless it's *wholly* about a purged file.
 
 Reference script saved alongside this playbook: [`align-jsonl.py`](./align-jsonl.py). Update the `PURGED_DIRS` / `PURGED_FILES` constants and `JSONL`/`REPO` paths per run. Keep the `.pre-align.bak` the script creates; drop it after verifying all current hashes resolve via `git cat-file -e`.
 
@@ -237,10 +242,11 @@ Reference script saved alongside this playbook: [`align-jsonl.py`](./align-jsonl
 **Multi-pass gotcha (learned the hard way):** if you realign after pass-1, then do pass-2 and pass-3 on the same repo, do NOT naively re-run the aligner — the jsonl now holds post-pass-1 SHAs but the commit-map is pass-3's. The aligner will drop almost everything. Options:
 
 1. **Plan every filter-repo pass up front**, then realign once at the end. Best option.
-2. **Copy `.git/filter-repo/commit-map` aside before each pass**, then chain them in post-order: `orig → p1 → p2 → p3`.
-3. **Accept the drops** — realign uses current commit-map + "keep if SHA still exists in repo" fallback, which keeps unchanged commits but drops the rewritten chain. Fine if the purge is cosmetic (~50%+ loss for heavily-rewritten repos).
+1. **Copy `.git/filter-repo/commit-map` aside before each pass**, then chain them in post-order: `orig → p1 → p2 → p3`.
+1. **Accept the drops** — realign uses current commit-map + "keep if SHA still exists in repo" fallback, which keeps unchanged commits but drops the rewritten chain. Fine if the purge is cosmetic (~50%+ loss for heavily-rewritten repos).
 
 The fallback logic in `realign-all-purged.py`:
+
 ```python
 new = cmap.get(old)
 if new is None:
@@ -262,7 +268,7 @@ git update-ref -d refs/backup/pre-purge
 Most of the size win came from two things:
 
 1. An `auto-commit` that committed an entire `.venv` (`bin/`, `lib/python3.13/site-packages/`) — ~170 MB of historical blob weight despite being dangling.
-2. A 67 MB `dist/<name>.flavor` packaged binary.
+1. A 67 MB `dist/<name>.flavor` packaged binary.
 
 Accidentally-committed venvs + accidentally-committed build artifacts are typically the big wins. Everything else is rounding error.
 

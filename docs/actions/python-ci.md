@@ -55,69 +55,74 @@ This composite action provides a complete CI pipeline for Python projects:
 
 ## Inputs
 
-| Input | Description | Required | Default |
-|-------|-------------|----------|---------|
-| `python-version` | Python version to install | No | `'3.11'` |
-| `mode` | CI mode: `test`, `build`, `quality`, or `full` | No | `'full'` |
-| `test-directory` | Directory containing tests | No | `'tests/'` |
-| `source-directory` | Directory containing source code | No | `'src/'` |
-| `coverage-threshold` | Minimum coverage threshold percentage | No | `'80'` |
-| `run-quality-checks` | Enable code quality checks (ruff, mypy) | No | `'true'` |
-| `run-security-scan` | Enable security scanning | No | `'false'` |
-| `dependency-groups` | Dependency groups to install (for PEP 735) | No | `'dev'` |
-| `upload-artifacts` | Upload build artifacts | No | `'true'` |
+| Input                | Description                                    | Required | Default    |
+| -------------------- | ---------------------------------------------- | -------- | ---------- |
+| `python-version`     | Python version to install                      | No       | `'3.11'`   |
+| `mode`               | CI mode: `test`, `build`, `quality`, or `full` | No       | `'full'`   |
+| `test-directory`     | Directory containing tests                     | No       | `'tests/'` |
+| `source-directory`   | Directory containing source code               | No       | `'src/'`   |
+| `coverage-threshold` | Minimum coverage threshold percentage          | No       | `'80'`     |
+| `run-quality-checks` | Enable code quality checks (ruff, mypy)        | No       | `'true'`   |
+| `run-security-scan`  | Enable security scanning                       | No       | `'false'`  |
+| `dependency-groups`  | Dependency groups to install (for PEP 735)     | No       | `'dev'`    |
+| `upload-artifacts`   | Upload build artifacts                         | No       | `'true'`   |
 
 ## Outputs
 
-| Output | Description |
-|--------|-------------|
-| `python-version` | Installed Python version |
-| `coverage-percentage` | Test coverage percentage |
-| `build-success` | Whether build was successful |
-| `package-version` | Built package version |
+| Output                | Description                  |
+| --------------------- | ---------------------------- |
+| `python-version`      | Installed Python version     |
+| `coverage-percentage` | Test coverage percentage     |
+| `build-success`       | Whether build was successful |
+| `package-version`     | Built package version        |
 
 ## Modes
 
 ### `full` (Default)
 
 Runs all steps:
+
 1. Setup Python and UV
-2. Install dependencies
-3. Code quality checks (ruff, mypy)
-4. Security scanning (if enabled)
-5. Run tests with coverage
-6. Build package
-7. Upload artifacts
+1. Install dependencies
+1. Code quality checks (ruff, mypy)
+1. Security scanning (if enabled)
+1. Run tests with coverage
+1. Build package
+1. Upload artifacts
 
 ### `test`
 
 Runs only:
+
 1. Setup Python and UV
-2. Install dependencies
-3. Run tests with coverage
-4. Upload test results
+1. Install dependencies
+1. Run tests with coverage
+1. Upload test results
 
 ### `build`
 
 Runs only:
+
 1. Setup Python and UV
-2. Install dependencies
-3. Build package
-4. Upload build artifacts
+1. Install dependencies
+1. Build package
+1. Upload build artifacts
 
 ### `quality`
 
 Runs only:
+
 1. Setup Python and UV
-2. Install dependencies
-3. Code quality checks (ruff, mypy)
+1. Install dependencies
+1. Code quality checks (ruff, mypy)
 
 ### `security`
 
 Runs only:
+
 1. Setup Python and UV
-2. Install dependencies
-3. Security scanning
+1. Install dependencies
+1. Security scanning
 
 ## How It Works
 
@@ -189,12 +194,14 @@ Extracts package version from built wheel filename.
 ### 7. Upload Artifacts
 
 Uploads (when `upload-artifacts: 'true'`):
+
 - **python-packages**: Wheel and source distributions (90 days retention)
 - **test-results**: JUnit XML, coverage XML, Bandit JSON (30 days retention)
 
 ### 8. CI Summary
 
 Generates GitHub step summary with:
+
 - Configuration details
 - Test coverage results
 - Build results and version
@@ -295,6 +302,7 @@ jobs:
 ### python-packages
 
 Contains built distributions:
+
 - `*.whl` - Wheel distribution
 - `*.tar.gz` - Source distribution
 
@@ -311,6 +319,7 @@ Download in subsequent jobs:
 ### test-results
 
 Contains test outputs:
+
 - `test-results.xml` - JUnit format test results
 - `coverage.xml` - Coverage report
 - `bandit-report.json` - Security scan results (if enabled)
@@ -392,22 +401,22 @@ Check `dependency-groups` input:
 
 ## Platform Support
 
-| Platform | Support | Notes |
-|----------|---------|-------|
-| `ubuntu-latest` | ✅ Full | Recommended |
-| `macos-latest` | ✅ Full | |
-| `windows-latest` | ✅ Full | |
+| Platform         | Support | Notes       |
+| ---------------- | ------- | ----------- |
+| `ubuntu-latest`  | ✅ Full | Recommended |
+| `macos-latest`   | ✅ Full |             |
+| `windows-latest` | ✅ Full |             |
 
 ## Performance
 
 Typical execution times:
 
-| Mode | Time | Notes |
-|------|------|-------|
-| `test` | 1-2min | Depends on test suite size |
-| `build` | 30-60s | Fast with UV |
-| `quality` | 30-60s | Depends on codebase size |
-| `full` | 2-4min | All steps combined |
+| Mode      | Time   | Notes                      |
+| --------- | ------ | -------------------------- |
+| `test`    | 1-2min | Depends on test suite size |
+| `build`   | 30-60s | Fast with UV               |
+| `quality` | 30-60s | Depends on codebase size   |
+| `full`    | 2-4min | All steps combined         |
 
 ## Next Steps
 

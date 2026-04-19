@@ -36,5 +36,5 @@ No dependencies to install; actions and scripts are self-contained.
 ## Pull Requests
 
 1. Run `.github/workflows/test-actions.yml` locally via `act` (or confirm it runs green on the PR branch).
-2. For reusable-workflow changes, validate against at least one consumer repo before merge.
-3. In the PR description, list which consumer repos you verified against.
+1. For reusable-workflow changes, validate against at least one consumer repo before merge.
+1. In the PR description, list which consumer repos you verified against.
