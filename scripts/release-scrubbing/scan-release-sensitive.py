@@ -7,6 +7,7 @@ name variants, internal URLs, private IPs, absolute file:// URLs.
 
 Customize PATTERNS and EMAIL_IGNORE below per project before running.
 """
+
 from __future__ import annotations
 
 import re

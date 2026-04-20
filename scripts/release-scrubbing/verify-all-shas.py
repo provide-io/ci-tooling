@@ -3,19 +3,29 @@
 # SPDX-License-Identifier: MIT
 
 """Verify every hash in every realigned summaries.jsonl resolves in its repo."""
+
 from __future__ import annotations
 
-import json
 import re
 import subprocess
 from pathlib import Path
 
 BASE = Path(__file__).parent
 REPOS = [
-    "provide-foundation", "provide-foundry", "provide-telemetry",
-    "provide-terminal", "provide-testkit", "provide-workspace",
-    "pyvider", "pyvider-components", "pyvider-cty", "pyvider-hcl",
-    "pyvider-rpcplugin", "pyvider-schema", "pyvider-telemetry", "wrknv",
+    "provide-foundation",
+    "provide-foundry",
+    "provide-telemetry",
+    "provide-terminal",
+    "provide-testkit",
+    "provide-workspace",
+    "pyvider",
+    "pyvider-components",
+    "pyvider-cty",
+    "pyvider-hcl",
+    "pyvider-rpcplugin",
+    "pyvider-schema",
+    "pyvider-telemetry",
+    "wrknv",
 ]
 
 SHA_RE = re.compile(r'"hash":\s*"([0-9a-f]{40})"')
@@ -36,10 +46,17 @@ def main() -> int:
             continue
         # batch-check all SHAs via cat-file --batch-check
         stdin = "\n".join(shas).encode()
-        out = subprocess.run(
-            ["git", "cat-file", "--batch-check=%(objecttype)"],
-            cwd=repo, input=stdin, check=False, capture_output=True,
-        ).stdout.decode("utf-8", "replace").splitlines()
+        out = (
+            subprocess.run(
+                ["git", "cat-file", "--batch-check=%(objecttype)"],
+                cwd=repo,
+                input=stdin,
+                check=False,
+                capture_output=True,
+            )
+            .stdout.decode("utf-8", "replace")
+            .splitlines()
+        )
         resolved = sum(1 for line in out if "commit" in line)
         missing = len(shas) - resolved
         print(f"{name:<24} {len(shas):>7} {resolved:>8} {missing:>8}")
