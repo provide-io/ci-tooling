@@ -18,13 +18,14 @@ Re-runs after multiple filter-repo passes: the commit-map reflects only the most
 recent pass, so restore from the oldest .pre-align.bak before each re-run, or
 chain the maps manually.
 """
+
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 # -- configure per repo ------------------------------------------------------
 REPO = Path("/Volumes/data/pyv/REPONAME")
@@ -89,9 +90,7 @@ def is_purged(path: str) -> bool:
     if PURGE_PYC_AND_PYCACHE and (path.endswith(".pyc") or "__pycache__" in path):
         return True
     base = path.rsplit("/", 1)[-1]
-    if PURGE_BAK_SUFFIXES and base.endswith(PURGE_BAK_SUFFIXES):
-        return True
-    return False
+    return bool(PURGE_BAK_SUFFIXES and base.endswith(PURGE_BAK_SUFFIXES))
 
 
 def transform(entry: dict, cmap: dict[str, str]) -> dict | None:

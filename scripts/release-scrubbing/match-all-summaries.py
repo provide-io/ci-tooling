@@ -7,6 +7,7 @@
 For each repo, if the current jsonl has entries whose hashes don't resolve,
 match via (subject, file-list-overlap) against the current repo and rewrite.
 """
+
 from __future__ import annotations
 
 import json
@@ -18,12 +19,28 @@ from pathlib import Path
 
 BASE = Path(__file__).parent
 REPOS = [
-    "provide-foundation", "provide-foundry", "provide-telemetry",
-    "provide-terminal", "provide-testkit", "provide-workspace",
-    "pyvider", "pyvider-components", "pyvider-cty", "pyvider-hcl",
-    "pyvider-rpcplugin", "pyvider-schema", "pyvider-telemetry", "wrknv",
-    "flavorpack", "terraform-provider-pyvider", "terraform-provider-tofusoup",
-    "ci-tooling", "plating", "supsrc", "tofusoup", "tfdev",
+    "provide-foundation",
+    "provide-foundry",
+    "provide-telemetry",
+    "provide-terminal",
+    "provide-testkit",
+    "provide-workspace",
+    "pyvider",
+    "pyvider-components",
+    "pyvider-cty",
+    "pyvider-hcl",
+    "pyvider-rpcplugin",
+    "pyvider-schema",
+    "pyvider-telemetry",
+    "wrknv",
+    "flavorpack",
+    "terraform-provider-pyvider",
+    "terraform-provider-tofusoup",
+    "ci-tooling",
+    "plating",
+    "supsrc",
+    "tofusoup",
+    "tfdev",
 ]
 
 DATE_WINDOW_DAYS = 7
@@ -41,23 +58,29 @@ def all_shas_resolve(repo: Path, shas: list[str]) -> bool:
         return True
     stdout = run(
         ["git", "cat-file", "--batch-check=%(objecttype)"],
-        repo, stdin=("\n".join(shas) + "\n").encode(),
+        repo,
+        stdin=("\n".join(shas) + "\n").encode(),
     ).decode("utf-8", "replace")
     return all("commit" in line for line in stdout.splitlines())
 
 
 def build_commit_index(repo: Path):
-    out = run([
-        "git", "log", "--all",
-        "--pretty=format:__COMMIT__%x09%H%x09%ai%x09%s",
-        "--name-only",
-    ], repo).decode("utf-8", "replace")
+    out = run(
+        [
+            "git",
+            "log",
+            "--all",
+            "--pretty=format:__COMMIT__%x09%H%x09%ai%x09%s",
+            "--name-only",
+        ],
+        repo,
+    ).decode("utf-8", "replace")
 
     commits = []
     cur_sha = cur_date = cur_subj = None
     cur_files: set[str] = set()
 
-    def flush():
+    def flush() -> None:
         if cur_sha:
             commits.append((cur_sha, cur_subj, cur_date, cur_files))
 
@@ -102,11 +125,13 @@ def find_by_subject(entry, subj_to_shas, sha_to_data):
         return next(iter(all_hits))
     edate = entry_date(entry)
     if edate:
+
         def delta(s):
             try:
                 return abs((datetime.strptime(sha_to_data[s][0], "%Y-%m-%d") - edate).days)
             except ValueError:
                 return 999
+
         in_window = [s for s in all_hits if delta(s) <= DATE_WINDOW_DAYS]
         if in_window:
             return max(in_window, key=lambda s: (hit_counts[s], -delta(s)))
@@ -151,6 +176,7 @@ def remap(repo: Path, jsonl: Path) -> dict:
     backup = jsonl.with_suffix(".jsonl.pre-match.bak")
     if not backup.exists():
         import shutil
+
         shutil.copy2(jsonl, backup)
 
     subj_to_shas, date_to_shas, sha_to_data = build_commit_index(repo)
@@ -179,12 +205,16 @@ def remap(repo: Path, jsonl: Path) -> dict:
 
     jsonl.write_text("\n".join(out_lines) + "\n", encoding="utf-8")
     return {
-        "repo": repo.name, "status": "remapped",
-        "total": total, "subject": via_subject, "files": via_files, "missing": missing,
+        "repo": repo.name,
+        "status": "remapped",
+        "total": total,
+        "subject": via_subject,
+        "files": via_files,
+        "missing": missing,
     }
 
 
-def main():
+def main() -> None:
     for name in REPOS:
         repo = BASE / name
         jsonl = BASE / f"{name}.summaries.jsonl"

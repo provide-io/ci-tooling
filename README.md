@@ -11,6 +11,7 @@ Shared GitHub Actions and reusable workflows for provide.io projects.
 - Project templates and scripts for consistent automation.
 
 ## Key Features
+
 - Shared composite actions for Python CI workflows.
 - Reusable workflows for standardized pipeline setups.
 - Project templates and scripts for consistent automation.
@@ -56,11 +57,13 @@ jobs:
 ```
 
 ## Documentation
+
 - [Actions](https://github.com/provide-io/ci-tooling/tree/main/actions)
 - [Workflows](https://github.com/provide-io/ci-tooling/tree/main/.github/workflows)
 - [Templates](https://github.com/provide-io/ci-tooling/tree/main/templates)
 
 ## Development
+
 - See [CLAUDE.md](https://github.com/provide-io/ci-tooling/blob/main/CLAUDE.md) for local development notes.
 - Run `./scripts/test-actions.sh` to validate actions locally.
 
@@ -85,7 +88,7 @@ cd ci-tooling
 
 Licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/provide-io/ci-tooling/blob/main/LICENSE) for details.
 
----
+______________________________________________________________________
 
 **provide.io llc** - Simplifying CI/CD for Python projects
 
@@ -95,21 +98,21 @@ Licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com
 - [Workflows](https://github.com/provide-io/ci-tooling/tree/main/.github/workflows)
 - [Templates](https://github.com/provide-io/ci-tooling/tree/main/templates)
 
-| Action | Description | Documentation |
-|--------|-------------|---------------|
-| [`setup-python-env`](https://github.com/provide-io/ci-tooling/tree/main/actions/setup-python-env) | Setup Python, UV, and workenv | [action.yml](https://github.com/provide-io/ci-tooling/blob/main/actions/setup-python-env/action.yml) |
-| [`setup-github-auth`](https://github.com/provide-io/ci-tooling/tree/main/actions/setup-github-auth) | Configure GitHub authentication | [README](https://github.com/provide-io/ci-tooling/blob/main/actions/setup-github-auth/README.md) |
-| [`python-ci`](https://github.com/provide-io/ci-tooling/tree/main/actions/python-ci) | Combined lint, test, and build pipeline | [action.yml](https://github.com/provide-io/ci-tooling/blob/main/actions/python-ci/action.yml) |
-| [`python-release`](https://github.com/provide-io/ci-tooling/tree/main/actions/python-release) | PyPI publishing | [action.yml](https://github.com/provide-io/ci-tooling/blob/main/actions/python-release/action.yml) |
-| [`run-ci-tasks`](https://github.com/provide-io/ci-tooling/tree/main/actions/run-ci-tasks) | Run repo-specific CI tasks | [action.yml](https://github.com/provide-io/ci-tooling/blob/main/actions/run-ci-tasks/action.yml) |
-| [`build-psp`](https://github.com/provide-io/ci-tooling/tree/main/actions/build-psp) | Build PSP artifacts | [action.yml](https://github.com/provide-io/ci-tooling/blob/main/actions/build-psp/action.yml) |
+| Action                                                                                              | Description                             | Documentation                                                                                        |
+| --------------------------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [`setup-python-env`](https://github.com/provide-io/ci-tooling/tree/main/actions/setup-python-env)   | Setup Python, UV, and workenv           | [action.yml](https://github.com/provide-io/ci-tooling/blob/main/actions/setup-python-env/action.yml) |
+| [`setup-github-auth`](https://github.com/provide-io/ci-tooling/tree/main/actions/setup-github-auth) | Configure GitHub authentication         | [README](https://github.com/provide-io/ci-tooling/blob/main/actions/setup-github-auth/README.md)     |
+| [`python-ci`](https://github.com/provide-io/ci-tooling/tree/main/actions/python-ci)                 | Combined lint, test, and build pipeline | [action.yml](https://github.com/provide-io/ci-tooling/blob/main/actions/python-ci/action.yml)        |
+| [`python-release`](https://github.com/provide-io/ci-tooling/tree/main/actions/python-release)       | PyPI publishing                         | [action.yml](https://github.com/provide-io/ci-tooling/blob/main/actions/python-release/action.yml)   |
+| [`run-ci-tasks`](https://github.com/provide-io/ci-tooling/tree/main/actions/run-ci-tasks)           | Run repo-specific CI tasks              | [action.yml](https://github.com/provide-io/ci-tooling/blob/main/actions/run-ci-tasks/action.yml)     |
+| [`build-psp`](https://github.com/provide-io/ci-tooling/tree/main/actions/build-psp)                 | Build PSP artifacts                     | [action.yml](https://github.com/provide-io/ci-tooling/blob/main/actions/build-psp/action.yml)        |
 
 ### Reusable Workflows
 
-| Workflow | Description | Documentation |
-|----------|-------------|---------------|
-| [`python-ci.yml`](https://github.com/provide-io/ci-tooling/blob/main/.github/workflows/python-ci.yml) | Complete CI pipeline | [workflow](https://github.com/provide-io/ci-tooling/blob/main/.github/workflows/python-ci.yml) |
-| [`python-release.yml`](https://github.com/provide-io/ci-tooling/blob/main/.github/workflows/python-release.yml) | Release workflow | [workflow](https://github.com/provide-io/ci-tooling/blob/main/.github/workflows/python-release.yml) |
+| Workflow                                                                                                        | Description          | Documentation                                                                                       |
+| --------------------------------------------------------------------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------- |
+| [`python-ci.yml`](https://github.com/provide-io/ci-tooling/blob/main/.github/workflows/python-ci.yml)           | Complete CI pipeline | [workflow](https://github.com/provide-io/ci-tooling/blob/main/.github/workflows/python-ci.yml)      |
+| [`python-release.yml`](https://github.com/provide-io/ci-tooling/blob/main/.github/workflows/python-release.yml) | Release workflow     | [workflow](https://github.com/provide-io/ci-tooling/blob/main/.github/workflows/python-release.yml) |
 
 ## 🏗️ Architecture
 
@@ -135,15 +138,16 @@ provide-io/ci-tooling/
 ### From Custom CI to Shared Actions
 
 1. **Identify your current workflow patterns**
-2. **Choose the appropriate approach**:
+1. **Choose the appropriate approach**:
    - Individual actions for granular control
    - Reusable workflows for standardization
-3. **Update your `.github/workflows/` files**
-4. **Test thoroughly**
+1. **Update your `.github/workflows/` files**
+1. **Test thoroughly**
 
 ### Example Migration
 
 **Before** (custom workflow):
+
 ```yaml
 name: CI
 on: [push, pull_request]
@@ -166,6 +170,7 @@ jobs:
 ```
 
 **After** (using shared actions):
+
 ```yaml
 name: CI
 on: [push, pull_request]

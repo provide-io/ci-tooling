@@ -7,9 +7,9 @@ Reusable workflow for Python continuous integration with quality checks, testing
 Complete CI pipeline with orchestrated jobs:
 
 1. **Quality** - Code quality checks (ruff, mypy)
-2. **Test** - PyTest execution with coverage
-3. **Security** - Security scanning (optional)
-4. **Performance** - Performance benchmarks (optional)
+1. **Test** - PyTest execution with coverage
+1. **Security** - Security scanning (optional)
+1. **Performance** - Performance benchmarks (optional)
 
 ## Usage
 
@@ -54,31 +54,31 @@ jobs:
 
 ## Inputs
 
-| Input | Type | Description | Default |
-|-------|------|-------------|---------|
-| `python-version` | string | Python version to use | `'3.11'` |
-| `uv-version` | string | UV version to use | `'0.11.3'` |
-| `source-paths` | string | Source paths for quality checks | `'src/ tests/'` |
-| `test-directory` | string | Test directory | `'tests/'` |
-| `coverage-threshold` | number | Coverage threshold percentage | `80` |
-| `run-security` | boolean | Run security scanning | `true` |
-| `run-performance` | boolean | Run performance tests | `false` |
-| `matrix-testing` | boolean | Enable matrix testing across Python versions | `false` |
-| `os-matrix` | string | Operating systems to test on (comma-separated) | `'ubuntu-latest'` |
-| `fail-fast` | boolean | Fail fast in matrix builds | `false` |
+| Input                | Type    | Description                                    | Default           |
+| -------------------- | ------- | ---------------------------------------------- | ----------------- |
+| `python-version`     | string  | Python version to use                          | `'3.11'`          |
+| `uv-version`         | string  | UV version to use                              | `'0.11.3'`        |
+| `source-paths`       | string  | Source paths for quality checks                | `'src/ tests/'`   |
+| `test-directory`     | string  | Test directory                                 | `'tests/'`        |
+| `coverage-threshold` | number  | Coverage threshold percentage                  | `80`              |
+| `run-security`       | boolean | Run security scanning                          | `true`            |
+| `run-performance`    | boolean | Run performance tests                          | `false`           |
+| `matrix-testing`     | boolean | Enable matrix testing across Python versions   | `false`           |
+| `os-matrix`          | string  | Operating systems to test on (comma-separated) | `'ubuntu-latest'` |
+| `fail-fast`          | boolean | Fail fast in matrix builds                     | `false`           |
 
 ## Secrets
 
-| Secret | Description | Required |
-|--------|-------------|----------|
-| `CODECOV_TOKEN` | Codecov token for coverage upload | No |
+| Secret          | Description                       | Required |
+| --------------- | --------------------------------- | -------- |
+| `CODECOV_TOKEN` | Codecov token for coverage upload | No       |
 
 ## Outputs
 
-| Output | Description |
-|--------|-------------|
+| Output                | Description              |
+| --------------------- | ------------------------ |
 | `coverage-percentage` | Test coverage percentage |
-| `package-version` | Built package version |
+| `package-version`     | Built package version    |
 
 ## Jobs
 
@@ -212,6 +212,7 @@ When `matrix-testing: true`, tests run across:
 Total combinations: `len(python_versions) × len(os_matrix)`
 
 Example with `os-matrix: 'ubuntu-latest,macos-latest'`:
+
 - 3.11 on ubuntu-latest
 - 3.11 on macos-latest
 - 3.12 on ubuntu-latest
@@ -275,10 +276,11 @@ When `CODECOV_TOKEN` secret is provided:
 - Coverage trends and graphs
 
 Setup:
+
 1. Sign up at [codecov.io](https://codecov.io/)
-2. Add repository
-3. Copy token
-4. Add as `CODECOV_TOKEN` secret
+1. Add repository
+1. Copy token
+1. Add as `CODECOV_TOKEN` secret
 
 ## Troubleshooting
 
@@ -323,12 +325,12 @@ with:
 
 ## Performance
 
-| Configuration | Time | Notes |
-|---------------|------|-------|
-| Basic (no matrix) | 2-4min | Single OS, single Python |
-| Matrix (3 versions) | 3-6min | Parallel execution |
-| Matrix (3 versions, 3 OS) | 4-8min | 9 parallel jobs |
-| With security | +1-2min | Parallel to tests |
+| Configuration             | Time    | Notes                    |
+| ------------------------- | ------- | ------------------------ |
+| Basic (no matrix)         | 2-4min  | Single OS, single Python |
+| Matrix (3 versions)       | 3-6min  | Parallel execution       |
+| Matrix (3 versions, 3 OS) | 4-8min  | 9 parallel jobs          |
+| With security             | +1-2min | Parallel to tests        |
 
 ## Best Practices
 
@@ -339,6 +341,7 @@ Quality checks are fast and catch common issues early.
 ### Use Matrix Sparingly
 
 Matrix testing is thorough but resource-intensive. Consider:
+
 - Run on main branch only
 - Run on schedule (nightly)
 - Run on release PRs only
@@ -352,6 +355,7 @@ Matrix testing is thorough but resource-intensive. Consider:
 ### Enable Security Scanning
 
 Security scans are valuable:
+
 - Catch vulnerabilities early
 - Low overhead (parallel to tests)
 - Integrates with GitHub Security
@@ -359,6 +363,7 @@ Security scans are valuable:
 ## Migration from Custom Workflows
 
 Before:
+
 ```yaml
 jobs:
   lint:
@@ -373,6 +378,7 @@ jobs:
 ```
 
 After:
+
 ```yaml
 jobs:
   ci:

@@ -13,11 +13,11 @@ Usage: set REPO to the repo directory, then `python3 scan-paths.py`.
 Classify results into Class A (whole path is cruft - purge via paths-from-file)
 and Class B (path stays, old revs leak - scrub via filter-repo --replace-text).
 """
+
 from __future__ import annotations
 
 import re
 import subprocess
-import sys
 from collections import defaultdict
 
 REPO = "/Volumes/data/pyv/REPONAME"
@@ -33,17 +33,15 @@ ABS_PATTERNS = [
 # Generic placeholders that shouldn't count as leaks.
 SKIP_IN = [
     b"/Users/Shared",
-    b"/home/runner",      # github actions
-    b"/home/user",        # stock docker examples
-    b"/home/vscode",      # devcontainers
+    b"/home/runner",  # github actions
+    b"/home/user",  # stock docker examples
+    b"/home/vscode",  # devcontainers
     b"$HOME",
 ]
 
 
 def run(args: list[str], stdin: bytes | None = None) -> bytes:
-    return subprocess.run(
-        args, cwd=REPO, input=stdin, check=False, capture_output=True
-    ).stdout
+    return subprocess.run(args, cwd=REPO, input=stdin, check=False, capture_output=True).stdout
 
 
 def scan_bytes(data: bytes) -> list[bytes]:
@@ -68,8 +66,7 @@ def main() -> int:
         ["git", "cat-file", "--batch-check=%(objecttype) %(objectname)"],
         stdin=("\n".join(blob_paths.keys()) + "\n").encode(),
     )
-    blobs = [row.split()[1] for row in typed.decode().splitlines()
-             if row.startswith("blob ")]
+    blobs = [row.split()[1] for row in typed.decode().splitlines() if row.startswith("blob ")]
 
     commits = run(["git", "rev-list", "--all"]).decode("ascii", "replace").split()
 
@@ -99,7 +96,9 @@ def main() -> int:
             if path not in path_at_head:
                 r = subprocess.run(
                     ["git", "ls-files", "--error-unmatch", path],
-                    cwd=REPO, check=False, capture_output=True,
+                    cwd=REPO,
+                    check=False,
+                    capture_output=True,
                 )
                 path_at_head[path] = r.returncode == 0
 
@@ -116,7 +115,7 @@ def main() -> int:
     if commit_hits:
         print("\n=== commit message hits (top 10) ===")
         for sha, hits in list(commit_hits.items())[:10]:
-            uniq = sorted({h.decode('utf-8', 'replace') for h in hits})
+            uniq = sorted({h.decode("utf-8", "replace") for h in hits})
             print(f"  {sha[:10]}")
             for h in uniq[:3]:
                 print(f"    {h}")

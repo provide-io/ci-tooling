@@ -105,7 +105,7 @@ def update_pre_commit(repo_path: Path, versions: dict) -> int:
         return 0
 
     content = config_file.read_text()
-    data = yaml.safe_load(content)
+    yaml.safe_load(content)
     total_changes = 0
 
     # Build URL-to-rev mapping
@@ -145,11 +145,15 @@ def update_pre_commit(repo_path: Path, versions: dict) -> int:
     return total_changes
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("repo_path", type=Path, help="Path to target repository")
-    parser.add_argument("--actions", action="store_true", help="Update GitHub Action versions (default if neither flag given)")
-    parser.add_argument("--pre-commit", action="store_true", dest="pre_commit", help="Update pre-commit hook versions")
+    parser.add_argument(
+        "--actions", action="store_true", help="Update GitHub Action versions (default if neither flag given)"
+    )
+    parser.add_argument(
+        "--pre-commit", action="store_true", dest="pre_commit", help="Update pre-commit hook versions"
+    )
     args = parser.parse_args()
 
     # Default to --actions if neither specified

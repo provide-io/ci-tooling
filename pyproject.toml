@@ -25,7 +25,11 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "ANN", "B", "C90", "SIM", "PTH", "RUF"]
-ignore = ["ANN401", "B008", "E501"]
+ignore = ["ANN401", "B008", "E501", "C901", "E741"]
+
+# Helper scripts (not reusable library code) — relax annotation and PTH rules.
+[tool.ruff.lint.per-file-ignores]
+"scripts/**" = ["ANN001", "ANN002", "ANN003", "ANN201", "ANN202", "ANN204", "PTH100", "PTH120", "PTH123"]
 
 [tool.ruff.format]
 quote-style = "double"

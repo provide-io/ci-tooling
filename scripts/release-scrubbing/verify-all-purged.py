@@ -4,6 +4,7 @@
 
 """Run scan-paths + scan-release-sensitive checks + trufflehog + CoA/binary
 checks against every purged repo. Report cleanly."""
+
 from __future__ import annotations
 
 import re
@@ -12,20 +13,56 @@ from pathlib import Path
 
 BASE = Path(__file__).parent
 REPOS = [
-    "provide-foundation", "provide-foundry", "provide-telemetry",
-    "provide-terminal", "provide-testkit", "provide-workspace",
-    "pyvider", "pyvider-components", "pyvider-cty", "pyvider-hcl",
-    "pyvider-rpcplugin", "pyvider-schema", "pyvider-telemetry", "wrknv",
+    "provide-foundation",
+    "provide-foundry",
+    "provide-telemetry",
+    "provide-terminal",
+    "provide-testkit",
+    "provide-workspace",
+    "pyvider",
+    "pyvider-components",
+    "pyvider-cty",
+    "pyvider-hcl",
+    "pyvider-rpcplugin",
+    "pyvider-schema",
+    "pyvider-telemetry",
+    "wrknv",
 ]
 
 ABS_PATH = re.compile(rb"/(?:Users|home)/[a-zA-Z][a-zA-Z0-9_.-]+/[a-zA-Z0-9_./-]+")
 ABS_PATH_SKIP = [b"/Users/Shared", b"/home/runner", b"/home/user", b"/home/vscode"]
 BAD_EMAILS = [b"tim@nwea.org", b"code@provide.io", b"code@tim.life"]
 BINARY_EXTS = (
-    ".pyc", ".pyo", ".pyd", ".so", ".dylib", ".dll", ".a", ".o", ".obj",
-    ".exe", ".dmg", ".pkg", ".zip", ".tar.gz", ".tgz", ".tar.bz2", ".7z",
-    ".rar", ".whl", ".egg", ".flavor", ".pspf", ".sqlite", ".sqlite3", ".db",
-    ".pdb", ".ilk", ".bak", ".bak2", ".bak3",
+    ".pyc",
+    ".pyo",
+    ".pyd",
+    ".so",
+    ".dylib",
+    ".dll",
+    ".a",
+    ".o",
+    ".obj",
+    ".exe",
+    ".dmg",
+    ".pkg",
+    ".zip",
+    ".tar.gz",
+    ".tgz",
+    ".tar.bz2",
+    ".7z",
+    ".rar",
+    ".whl",
+    ".egg",
+    ".flavor",
+    ".pspf",
+    ".sqlite",
+    ".sqlite3",
+    ".db",
+    ".pdb",
+    ".ilk",
+    ".bak",
+    ".bak2",
+    ".bak3",
 )
 
 
@@ -54,20 +91,20 @@ def check_repo(name: str) -> dict:
         parts = line.split(" ", 1)
         if len(parts) == 2:
             blob_shas.append(parts[0])
-    typed = run(
+    run(
         ["git", "cat-file", "--batch-check=%(objecttype) %(objectname)"],
         repo,
     )
     # feed blobs on stdin via a separate Popen
     proc = subprocess.Popen(
         ["git", "cat-file", "--batch-check=%(objecttype) %(objectname)"],
-        cwd=repo, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        cwd=repo,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
     )
     stdout, _ = proc.communicate(input=("\n".join(blob_shas) + "\n").encode())
     blobs = [
-        row.split()[1]
-        for row in stdout.decode("utf-8", "replace").splitlines()
-        if row.startswith("blob ")
+        row.split()[1] for row in stdout.decode("utf-8", "replace").splitlines() if row.startswith("blob ")
     ]
 
     # scan each blob for abs paths and bad emails
@@ -93,7 +130,8 @@ def check_repo(name: str) -> dict:
     # 5. preservation refs?
     refs = run(["git", "for-each-ref", "--format=%(refname)"], repo).stdout.decode()
     pres_refs = [
-        r for r in refs.splitlines()
+        r
+        for r in refs.splitlines()
         if "fetch-extra" in r or "fetch-source" in r or r.startswith("refs/backup/")
     ]
 
@@ -117,8 +155,14 @@ def main() -> int:
             print(f"{name:<22} (no repo)")
             continue
         flags = " ".join(
-            f"!{k}" for k in ("coa", "path_leak_blobs", "bad_email_blobs",
-                              "binary_paths_in_history", "preservation_refs")
+            f"!{k}"
+            for k in (
+                "coa",
+                "path_leak_blobs",
+                "bad_email_blobs",
+                "binary_paths_in_history",
+                "preservation_refs",
+            )
             if isinstance(r.get(k), int) and r[k] > 0
         )
         if r["bad_email_metadata"]:
