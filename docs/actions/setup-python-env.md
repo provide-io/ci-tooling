@@ -53,23 +53,23 @@ This composite action configures a complete Python development environment:
 
 ## Inputs
 
-| Input                | Description                                 | Required | Default       |
-| -------------------- | ------------------------------------------- | -------- | ------------- |
-| `python-version`     | Python version to install                   | No       | `'3.11'`      |
-| `uv-version`         | UV package manager version                  | No       | `'0.11.3'`    |
-| `workenv-path`       | Path to create workenv directory            | No       | `'./workenv'` |
-| `cache-dependencies` | Enable dependency caching                   | No       | `'true'`      |
-| `install-extras`     | Package extras to install (comma-separated) | No       | `'dev'`       |
-| `project-path`       | Path to project root (for editable install) | No       | `'.'`         |
+| Input | Description | Required | Default |
+|-------|-------------|----------|---------|
+| `python-version` | Python version to install | No | `'3.11'` |
+| `uv-version` | UV package manager version | No | `'0.11.3'` |
+| `workenv-path` | Path to create workenv directory | No | `'./workenv'` |
+| `cache-dependencies` | Enable dependency caching | No | `'true'` |
+| `install-extras` | Package extras to install (comma-separated) | No | `'dev'` |
+| `project-path` | Path to project root (for editable install) | No | `'.'` |
 
 ## Outputs
 
-| Output           | Description                      |
-| ---------------- | -------------------------------- |
-| `python-version` | Installed Python version         |
-| `uv-version`     | Installed UV version             |
-| `workenv-path`   | Path to workenv directory        |
-| `cache-hit`      | Whether dependency cache was hit |
+| Output | Description |
+|--------|-------------|
+| `python-version` | Installed Python version |
+| `uv-version` | Installed UV version |
+| `workenv-path` | Path to workenv directory |
+| `cache-hit` | Whether dependency cache was hit |
 
 ## How It Works
 
@@ -94,12 +94,10 @@ Adds `workenv/bin` to `$GITHUB_PATH` for subsequent steps.
 ### 4. Cache Dependencies
 
 Caches:
-
 - `~/.cache/uv` - UV cache directory
 - `workenv/` - Virtual environment
 
 Cache key based on:
-
 - Operating system
 - Python version
 - `pyproject.toml` and `requirements*.txt` hashes
@@ -122,7 +120,6 @@ uv pip install -r requirements.txt
 ### 6. Verify Installation
 
 Outputs summary to GitHub step summary:
-
 - Python version
 - UV version
 - Workenv path
@@ -185,7 +182,6 @@ jobs:
 ### Cache Hit
 
 When cache is hit:
-
 - ✅ Dependencies restored from cache
 - ✅ Faster workflow execution
 - ✅ Reduced bandwidth usage
@@ -193,7 +189,6 @@ When cache is hit:
 ### Cache Miss
 
 When cache misses:
-
 - Downloads and installs all dependencies
 - Creates new cache entry
 - Subsequent runs will be faster
@@ -201,7 +196,6 @@ When cache misses:
 ### Cache Invalidation
 
 Cache is invalidated when:
-
 - `pyproject.toml` changes
 - `requirements*.txt` changes
 - Python version changes
@@ -223,14 +217,12 @@ Ensure you're using the output path:
 ### Dependencies Not Installing
 
 Check that your project has either:
-
 - `pyproject.toml` with proper package configuration
 - `requirements.txt` file
 
 ### Cache Not Working
 
 Verify:
-
 - `cache-dependencies: 'true'` is set
 - Repository has caching enabled
 - Cache key hasn't exceeded GitHub's 10GB limit
@@ -253,21 +245,21 @@ Pin to specific UV version if needed:
 
 ## Platform Support
 
-| Platform         | Support | Notes           |
-| ---------------- | ------- | --------------- |
-| `ubuntu-latest`  | ✅ Full | Recommended     |
-| `macos-latest`   | ✅ Full |                 |
+| Platform | Support | Notes |
+|----------|---------|-------|
+| `ubuntu-latest` | ✅ Full | Recommended |
+| `macos-latest` | ✅ Full | |
 | `windows-latest` | ✅ Full | Uses PowerShell |
 
 ## Performance
 
 Typical execution times:
 
-| Scenario   | Time   | Notes                            |
-| ---------- | ------ | -------------------------------- |
-| Cache hit  | 10-20s | Dependencies restored from cache |
-| Cache miss | 1-3min | Full dependency installation     |
-| First run  | 1-3min | No cache available               |
+| Scenario | Time | Notes |
+|----------|------|-------|
+| Cache hit | 10-20s | Dependencies restored from cache |
+| Cache miss | 1-3min | Full dependency installation |
+| First run | 1-3min | No cache available |
 
 ## Next Steps
 

@@ -105,7 +105,7 @@ def update_pre_commit(repo_path: Path, versions: dict) -> int:
         return 0
 
     content = config_file.read_text()
-    yaml.safe_load(content)
+    _data = yaml.safe_load(content)
     total_changes = 0
 
     # Build URL-to-rev mapping
@@ -145,7 +145,7 @@ def update_pre_commit(repo_path: Path, versions: dict) -> int:
     return total_changes
 
 
-def main() -> int:
+def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("repo_path", type=Path, help="Path to target repository")
     parser.add_argument(

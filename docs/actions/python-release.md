@@ -59,29 +59,29 @@ This composite action automates package releases:
 
 ## Inputs
 
-| Input                   | Description                                | Required | Default                             |
-| ----------------------- | ------------------------------------------ | -------- | ----------------------------------- |
-| `pypi-token`            | PyPI API token for publishing              | Yes      | -                                   |
-| `github-token`          | GitHub token for creating releases         | No       | `${{ github.token }}`               |
-| `repository-url`        | PyPI repository URL (for TestPyPI)         | No       | `'https://upload.pypi.org/legacy/'` |
-| `skip-existing`         | Skip uploading if package already exists   | No       | `'true'`                            |
-| `verify-metadata`       | Verify package metadata before upload      | No       | `'true'`                            |
-| `create-github-release` | Create GitHub release                      | No       | `'true'`                            |
-| `release-notes`         | Release notes content                      | No       | `''`                                |
-| `release-notes-file`    | Path to release notes file                 | No       | `''`                                |
-| `prerelease`            | Mark as prerelease                         | No       | `'false'`                           |
-| `workenv-path`          | Path to workenv directory                  | No       | `'./workenv'`                       |
-| `artifacts-path`        | Path to build artifacts                    | No       | `'dist/'`                           |
-| `dry-run`               | Dry run mode - validate without publishing | No       | `'false'`                           |
+| Input | Description | Required | Default |
+|-------|-------------|----------|---------|
+| `pypi-token` | PyPI API token for publishing | Yes | - |
+| `github-token` | GitHub token for creating releases | No | `${{ github.token }}` |
+| `repository-url` | PyPI repository URL (for TestPyPI) | No | `'https://upload.pypi.org/legacy/'` |
+| `skip-existing` | Skip uploading if package already exists | No | `'true'` |
+| `verify-metadata` | Verify package metadata before upload | No | `'true'` |
+| `create-github-release` | Create GitHub release | No | `'true'` |
+| `release-notes` | Release notes content | No | `''` |
+| `release-notes-file` | Path to release notes file | No | `''` |
+| `prerelease` | Mark as prerelease | No | `'false'` |
+| `workenv-path` | Path to workenv directory | No | `'./workenv'` |
+| `artifacts-path` | Path to build artifacts | No | `'dist/'` |
+| `dry-run` | Dry run mode - validate without publishing | No | `'false'` |
 
 ## Outputs
 
-| Output               | Description                            |
-| -------------------- | -------------------------------------- |
-| `release-version`    | Released version                       |
-| `pypi-url`           | PyPI package URL                       |
-| `github-release-url` | GitHub release URL                     |
-| `release-result`     | Release result (`success` or `failed`) |
+| Output | Description |
+|--------|-------------|
+| `release-version` | Released version |
+| `pypi-url` | PyPI package URL |
+| `github-release-url` | GitHub release URL |
+| `release-result` | Release result (`success` or `failed`) |
 
 ## How It Works
 
@@ -103,7 +103,6 @@ twine check dist/*
 ```
 
 Validates:
-
 - Package structure
 - Metadata completeness
 - README rendering
@@ -112,7 +111,6 @@ Validates:
 ### 3. Dry Run (Optional)
 
 When `dry-run: 'true'`:
-
 - Validates packages without uploading
 - Shows what would be published
 - Checks metadata
@@ -121,7 +119,6 @@ When `dry-run: 'true'`:
 ### 4. Upload to PyPI
 
 Uses official `pypa/gh-action-pypi-publish@release/v1`:
-
 - Secure token-based authentication
 - Automatic retry on transient failures
 - Skip existing packages (optional)
@@ -138,15 +135,13 @@ https://pypi.org/project/{package-name}/{version}/
 ### 6. Prepare Release Notes
 
 Priority order:
-
 1. `release-notes` input (direct content)
-1. `release-notes-file` input (file path)
-1. Auto-generated (version, PyPI link, artifacts list)
+2. `release-notes-file` input (file path)
+3. Auto-generated (version, PyPI link, artifacts list)
 
 ### 7. Create GitHub Release
 
 When `create-github-release: 'true'`:
-
 - Creates Git tag (`v{version}`)
 - Creates GitHub release
 - Attaches build artifacts
@@ -155,7 +150,6 @@ When `create-github-release: 'true'`:
 ### 8. Release Summary
 
 Generates step summary with:
-
 - Release mode (production or dry run)
 - Version released
 - PyPI URL
@@ -280,27 +274,27 @@ jobs:
 ### Create PyPI API Token
 
 1. Log in to [PyPI](https://pypi.org/)
-1. Go to Account Settings → API tokens
-1. Click "Add API token"
-1. Name: "GitHub Actions"
-1. Scope: Select project or account-wide
-1. Copy token (starts with `pypi-`)
+2. Go to Account Settings → API tokens
+3. Click "Add API token"
+4. Name: "GitHub Actions"
+5. Scope: Select project or account-wide
+6. Copy token (starts with `pypi-`)
 
 ### Add to GitHub Secrets
 
 1. Go to repository Settings → Secrets and variables → Actions
-1. Click "New repository secret"
-1. Name: `PYPI_TOKEN`
-1. Value: Paste your PyPI token
-1. Click "Add secret"
+2. Click "New repository secret"
+3. Name: `PYPI_TOKEN`
+4. Value: Paste your PyPI token
+5. Click "Add secret"
 
 ### Test PyPI Token
 
 For testing releases:
 
 1. Create token on [Test PyPI](https://test.pypi.org/)
-1. Add as `TEST_PYPI_TOKEN` secret
-1. Use with `repository-url: 'https://test.pypi.org/legacy/'`
+2. Add as `TEST_PYPI_TOKEN` secret
+3. Use with `repository-url: 'https://test.pypi.org/legacy/'`
 
 ## Permissions
 
@@ -352,7 +346,6 @@ twine check dist/*
 ```
 
 Fix issues in `pyproject.toml`:
-
 - Add `readme` field
 - Complete `description`
 - Valid `license` identifier
@@ -360,7 +353,6 @@ Fix issues in `pyproject.toml`:
 ### GitHub Release Failed
 
 Ensure:
-
 - Tag pushed to repository
 - `contents: write` permission
 - Valid `github-token`
@@ -368,7 +360,6 @@ Ensure:
 ### PyPI Upload Failed
 
 Check:
-
 - Valid PyPI token
 - Token has project scope
 - Package name available
@@ -428,11 +419,11 @@ bump2version major  # 1.1.0 → 2.0.0
 
 ## Platform Support
 
-| Platform         | Support | Notes       |
-| ---------------- | ------- | ----------- |
-| `ubuntu-latest`  | ✅ Full | Recommended |
-| `macos-latest`   | ✅ Full |             |
-| `windows-latest` | ✅ Full |             |
+| Platform | Support | Notes |
+|----------|---------|-------|
+| `ubuntu-latest` | ✅ Full | Recommended |
+| `macos-latest` | ✅ Full | |
+| `windows-latest` | ✅ Full | |
 
 ## Security
 

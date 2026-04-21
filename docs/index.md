@@ -135,8 +135,8 @@ The tooling follows ecosystem conventions:
 Start simple and add features as needed:
 
 1. **Basic**: Use `python-ci` action for complete pipeline
-1. **Custom**: Compose individual actions for custom workflows
-1. **Advanced**: Extend with additional steps and matrix testing
+2. **Custom**: Compose individual actions for custom workflows
+3. **Advanced**: Extend with additional steps and matrix testing
 
 ### Zero-Friction Developer Experience
 

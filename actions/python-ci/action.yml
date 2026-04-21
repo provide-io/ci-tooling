@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: MIT
-
 name: 'Python CI Pipeline'
 description: 'Comprehensive Python CI pipeline with testing, quality checks, and building'
 author: 'provide.io llc'

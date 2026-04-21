@@ -7,9 +7,9 @@ Reusable workflow for automated Python package releases with testing, building, 
 Complete release pipeline:
 
 1. **Test** - Run full CI test suite
-1. **Build** - Build wheel and source distributions
-1. **Publish** - Upload to PyPI
-1. **Release** - Create GitHub release with artifacts
+2. **Build** - Build wheel and source distributions
+3. **Publish** - Upload to PyPI
+4. **Release** - Create GitHub release with artifacts
 
 ## Usage
 
@@ -62,33 +62,33 @@ jobs:
 
 ## Inputs
 
-| Input                   | Type    | Description                 | Default                             |
-| ----------------------- | ------- | --------------------------- | ----------------------------------- |
-| `python-version`        | string  | Python version to use       | `'3.11'`                            |
-| `uv-version`            | string  | UV version to use           | `'0.11.3'`                          |
-| `test-directory`        | string  | Test directory              | `'tests/'`                          |
-| `coverage-threshold`    | number  | Coverage threshold          | `80`                                |
-| `skip-tests`            | boolean | Skip test job               | `false`                             |
-| `repository-url`        | string  | PyPI repository URL         | `'https://upload.pypi.org/legacy/'` |
-| `skip-existing`         | boolean | Skip if package exists      | `true`                              |
-| `create-github-release` | boolean | Create GitHub release       | `true`                              |
-| `prerelease`            | boolean | Mark as prerelease          | `false`                             |
-| `dry-run`               | boolean | Validate without publishing | `false`                             |
-| `release-notes-file`    | string  | Path to release notes       | `''`                                |
+| Input | Type | Description | Default |
+|-------|------|-------------|---------|
+| `python-version` | string | Python version to use | `'3.11'` |
+| `uv-version` | string | UV version to use | `'0.11.3'` |
+| `test-directory` | string | Test directory | `'tests/'` |
+| `coverage-threshold` | number | Coverage threshold | `80` |
+| `skip-tests` | boolean | Skip test job | `false` |
+| `repository-url` | string | PyPI repository URL | `'https://upload.pypi.org/legacy/'` |
+| `skip-existing` | boolean | Skip if package exists | `true` |
+| `create-github-release` | boolean | Create GitHub release | `true` |
+| `prerelease` | boolean | Mark as prerelease | `false` |
+| `dry-run` | boolean | Validate without publishing | `false` |
+| `release-notes-file` | string | Path to release notes | `''` |
 
 ## Secrets
 
-| Secret         | Description    | Required                        |
-| -------------- | -------------- | ------------------------------- |
-| `pypi-token`   | PyPI API token | Yes (unless trusted publishing) |
-| `github-token` | GitHub token   | No (auto-provided)              |
+| Secret | Description | Required |
+|--------|-------------|----------|
+| `pypi-token` | PyPI API token | Yes (unless trusted publishing) |
+| `github-token` | GitHub token | No (auto-provided) |
 
 ## Outputs
 
-| Output               | Description        |
-| -------------------- | ------------------ |
-| `release-version`    | Released version   |
-| `pypi-url`           | PyPI package URL   |
+| Output | Description |
+|--------|-------------|
+| `release-version` | Released version |
+| `pypi-url` | PyPI package URL |
 | `github-release-url` | GitHub release URL |
 
 ## Jobs
@@ -246,24 +246,23 @@ jobs:
 ### Create PyPI Token
 
 1. Log in to [PyPI](https://pypi.org/)
-1. Account Settings → API tokens
-1. "Add API token"
-1. Name: "GitHub Actions - {repo-name}"
-1. Scope: Project or account-wide
-1. Copy token (starts with `pypi-`)
+2. Account Settings → API tokens
+3. "Add API token"
+4. Name: "GitHub Actions - {repo-name}"
+5. Scope: Project or account-wide
+6. Copy token (starts with `pypi-`)
 
 ### Add to GitHub
 
 1. Repository Settings → Secrets and variables → Actions
-1. "New repository secret"
-1. Name: `PYPI_TOKEN`
-1. Value: Paste PyPI token
-1. "Add secret"
+2. "New repository secret"
+3. Name: `PYPI_TOKEN`
+4. Value: Paste PyPI token
+5. "Add secret"
 
 ### Test PyPI (Optional)
 
 Same steps on [Test PyPI](https://test.pypi.org/):
-
 - Create token
 - Add as `TEST_PYPI_TOKEN`
 - Use with `repository-url: 'https://test.pypi.org/legacy/'`
@@ -273,7 +272,6 @@ Same steps on [Test PyPI](https://test.pypi.org/):
 PyPI supports trusted publishing without tokens:
 
 1. Configure on PyPI:
-
    - Project Settings → Publishing
    - Add trusted publisher
    - Owner: your-org
@@ -281,8 +279,7 @@ PyPI supports trusted publishing without tokens:
    - Workflow: release.yml
    - Environment: release (optional)
 
-1. Update workflow:
-
+2. Update workflow:
 ```yaml
 permissions:
   id-token: write  # For trusted publishing
@@ -325,7 +322,6 @@ jobs:
 ### Auto-Generated
 
 Default behavior - generates notes with:
-
 - Version number
 - PyPI package link
 - Artifact list
@@ -357,14 +353,12 @@ with:
 ### python-packages
 
 Contains:
-
 - `*.whl` - Wheel distribution
 - `*.tar.gz` - Source distribution
 
 Retention: 90 days
 
 Available for download from:
-
 - Workflow run page
 - GitHub release page
 - PyPI package page
@@ -394,13 +388,11 @@ with:
 ### Metadata Validation Failed
 
 Check `pyproject.toml`:
-
 - Valid `readme` field
 - Complete `description`
 - Valid `license` identifier
 
 Test locally:
-
 ```bash
 uv build
 twine check dist/*
@@ -409,7 +401,6 @@ twine check dist/*
 ### GitHub Release Failed
 
 Ensure:
-
 - Tag exists: `git push --tags`
 - Permissions: `contents: write`
 - Valid token
@@ -417,7 +408,6 @@ Ensure:
 ### PyPI Upload Failed
 
 Check:
-
 - Valid token
 - Token has correct scope
 - Version not already published
@@ -464,7 +454,6 @@ bump2version major  # Major version
 Test releases before publishing:
 
 1. **Create dry-run workflow** (`.github/workflows/test-release.yml`):
-
 ```yaml
 name: Test Release
 
@@ -482,8 +471,8 @@ jobs:
 ```
 
 2. **Verify in PR**: Dry run executes on PRs
-1. **Review**: Check step summary for validation results
-1. **Merge**: Actual release on tag push
+3. **Review**: Check step summary for validation results
+4. **Merge**: Actual release on tag push
 
 ## Release Checklist
 
@@ -507,7 +496,6 @@ Don't skip tests. They catch issues before users do.
 ### Use Semantic Versioning
 
 Follow semver conventions:
-
 - Major: Breaking changes
 - Minor: New features
 - Patch: Bug fixes
@@ -515,7 +503,6 @@ Follow semver conventions:
 ### Write Release Notes
 
 Document what changed:
-
 - New features
 - Bug fixes
 - Breaking changes
@@ -524,11 +511,10 @@ Document what changed:
 ### Test on Test PyPI First
 
 For major releases:
-
 1. Release to Test PyPI
-1. Test installation: `pip install --index-url https://test.pypi.org/simple/ package-name`
-1. Verify functionality
-1. Release to production PyPI
+2. Test installation: `pip install --index-url https://test.pypi.org/simple/ package-name`
+3. Verify functionality
+4. Release to production PyPI
 
 ## Security
 
@@ -542,13 +528,13 @@ For major releases:
 
 Typical workflow execution:
 
-| Job       | Time       | Notes              |
-| --------- | ---------- | ------------------ |
-| test      | 2-4min     | Full CI test suite |
-| build     | 30-60s     | Package building   |
-| publish   | 30-60s     | PyPI upload        |
-| release   | 30-60s     | GitHub release     |
-| **Total** | **4-7min** | Complete pipeline  |
+| Job | Time | Notes |
+|-----|------|-------|
+| test | 2-4min | Full CI test suite |
+| build | 30-60s | Package building |
+| publish | 30-60s | PyPI upload |
+| release | 30-60s | GitHub release |
+| **Total** | **4-7min** | Complete pipeline |
 
 ## Next Steps
 

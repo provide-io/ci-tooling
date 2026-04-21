@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: MIT
-
 name: 'Setup Python Environment'
 description: 'Setup Python, UV, and workenv for provide.io projects'
 author: 'provide.io llc'
@@ -95,7 +92,7 @@ runs:
           echo "📦 Installing from pyproject.toml"
           if [ -n "${{ inputs.install-group }}" ]; then
             echo "🔧 Installing with group: ${{ inputs.install-group }}"
-            uv sync --project "${{ inputs.project-path }}" --group "${{ inputs.install-group }}"
+            uv sync --active --project "${{ inputs.project-path }}" --group "${{ inputs.install-group }}"
           else
             uv sync --active --project "${{ inputs.project-path }}"
           fi
