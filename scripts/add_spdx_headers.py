@@ -43,7 +43,7 @@ def check_header_correctness(content: str) -> tuple[bool, str]:
         return False, "Missing SPDX tags or incorrect license"
 
     # Check year and company
-    copyright_line = next((l for l in lines if "SPDX-FileCopyrightText" in l), "")
+    copyright_line = next((ln for ln in lines if "SPDX-FileCopyrightText" in ln), "")
     if "2025" not in copyright_line:
         return False, "Incorrect year (not 2025)"
     if "provide.io llc" not in copyright_line:
@@ -74,6 +74,18 @@ def has_shebang(content: str) -> bool:
     return content.startswith("#!")
 
 
+def _check_existing_header(content: str, file_path: Path, verbose: bool) -> tuple[bool, str] | None:
+    """Check existing header. Returns result tuple to return early, or None to continue."""
+    if "SPDX-FileCopyrightText" not in content and "Copyright" not in content[:500]:
+        return None
+    is_correct, issue = check_header_correctness(content)
+    if not is_correct:
+        return False, f"  ⚠️  WARN: {file_path.relative_to(Path.cwd())} - {issue} (manual review needed)"
+    if verbose:
+        return False, f"  SKIP: {file_path.relative_to(Path.cwd())} (already has correct header)"
+    return False, ""
+
+
 def add_header(file_path: Path, dry_run: bool = False, verbose: bool = False) -> tuple[bool, str]:
     """Add SPDX header to file. Returns (modified, message)."""
     try:
@@ -89,14 +101,9 @@ def add_header(file_path: Path, dry_run: bool = False, verbose: bool = False) ->
         return False, ""
 
     # Check for existing headers
-    if "SPDX-FileCopyrightText" in content or "Copyright" in content[:500]:
-        is_correct, issue = check_header_correctness(content)
-        if not is_correct:
-            return False, f"  ⚠️  WARN: {file_path.relative_to(Path.cwd())} - {issue} (manual review needed)"
-        # Header already exists and is correct
-        if verbose:
-            return False, f"  SKIP: {file_path.relative_to(Path.cwd())} (already has correct header)"
-        return False, ""
+    existing = _check_existing_header(content, file_path, verbose)
+    if existing is not None:
+        return existing
 
     # Determine header placement
     lines = content.split("\n")

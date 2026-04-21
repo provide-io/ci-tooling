@@ -17,7 +17,7 @@ and Class B (path stays, old revs leak - scrub via filter-repo --replace-text).
 from __future__ import annotations
 
 import re
-import subprocess
+import subprocess  # nosec
 from collections import defaultdict
 
 REPO = "/Volumes/data/pyv/REPONAME"

@@ -34,9 +34,9 @@ A GitHub Action that configures git authentication for private repositories usin
 
 ## Inputs
 
-| Input             | Description                                                         | Required | Default          |
-| ----------------- | ------------------------------------------------------------------- | -------- | ---------------- |
-| `helpers-env-var` | Environment variable containing the organization helper tokens JSON | No       | `GH_ORG_HELPERS` |
+| Input | Description | Required | Default |
+|-------|-------------|----------|---------|
+| `helpers-env-var` | Environment variable containing the organization helper tokens JSON | No | `GH_ORG_HELPERS` |
 
 ## Environment Variables
 
@@ -52,11 +52,11 @@ The action expects an environment variable (default: `GH_ORG_HELPERS`) containin
 ## How It Works
 
 1. **Reads the environment variable** containing the organization-to-token mapping
-1. **Validates the JSON format** and token formats
-1. **Configures git URL rewriting** for each organization:
+2. **Validates the JSON format** and token formats
+3. **Configures git URL rewriting** for each organization:
    - Maps `https://github.com/{org}/` to `https://{token}@github.com/{org}/`
    - This allows git operations to automatically use the token for that organization
-1. **Provides feedback** on successful configuration or errors
+4. **Provides feedback** on successful configuration or errors
 
 ## Security Considerations
 
@@ -94,14 +94,12 @@ jobs:
 ## Token Requirements
 
 The GitHub Personal Access Tokens should have:
-
 - `repo` scope for private repository access
 - Appropriate permissions for the repositories you need to access
 
 ## Error Handling
 
 The action will:
-
 - **Skip configuration** if no environment variable is found (graceful degradation)
 - **Fail the workflow** if JSON is invalid
 - **Fail the workflow** if git configuration fails

@@ -11,7 +11,7 @@ Customize PATTERNS and EMAIL_IGNORE below per project before running.
 from __future__ import annotations
 
 import re
-import subprocess
+import subprocess  # nosec
 from collections import defaultdict
 
 REPO = "/Volumes/data/pyv/REPONAME"

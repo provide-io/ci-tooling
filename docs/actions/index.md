@@ -18,7 +18,7 @@ Set up Python, UV package manager, and workenv virtual environment.
 
 **Outputs:** Python version, UV version, workenv path, cache hit status
 
-______________________________________________________________________
+---
 
 ### [python-ci](python-ci/)
 
@@ -37,7 +37,7 @@ Complete CI pipeline with quality checks, testing, security scanning, and buildi
 
 **Outputs:** Python version, coverage percentage, build success, package version
 
-______________________________________________________________________
+---
 
 ### [python-release](python-release/)
 
@@ -53,7 +53,7 @@ Publish packages to PyPI and create GitHub releases.
 
 **Outputs:** Release version, PyPI URL, GitHub release URL, release result
 
-______________________________________________________________________
+---
 
 ## Action Composition Patterns
 
@@ -134,12 +134,12 @@ jobs:
 
 Most actions share these common inputs:
 
-| Input              | Description                 | Default       |
-| ------------------ | --------------------------- | ------------- |
-| `python-version`   | Python version to install   | `'3.11'`      |
-| `workenv-path`     | Path to virtual environment | `'./workenv'` |
-| `source-directory` | Source code directory       | `'src/'`      |
-| `test-directory`   | Test directory              | `'tests/'`    |
+| Input | Description | Default |
+|-------|-------------|---------|
+| `python-version` | Python version to install | `'3.11'` |
+| `workenv-path` | Path to virtual environment | `'./workenv'` |
+| `source-directory` | Source code directory | `'src/'` |
+| `test-directory` | Test directory | `'tests/'` |
 
 ## Common Outputs
 

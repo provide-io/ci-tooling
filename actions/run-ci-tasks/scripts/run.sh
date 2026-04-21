@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: MIT
-
 set -euo pipefail
 
 # Run CI tasks using wrknv if available, otherwise fall back to manual commands
@@ -33,7 +30,7 @@ fi
 # Check for wrknv.toml
 if [[ -f "wrknv.toml" ]]; then
     echo "::group::Installing wrknv"
-    uv pip install --python "${WORKENV_PATH}/bin/python" "wrknv @ https://github.com/provide-io/wrknv/releases/download/v0.3.0/wrknv-0.3.0-py3-none-any.whl"
+    uv tool install --python "${WORKENV_PATH}/bin/python" "wrknv @ https://github.com/provide-io/wrknv/releases/download/v0.3.0/wrknv-0.3.0-py3-none-any.whl"
     echo "::endgroup::"
 
     echo "::group::Running CI tasks with wrknv"

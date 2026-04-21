@@ -6,11 +6,16 @@
 
 The `ci-tooling` repository provides centralized pre-commit hooks that enforce code standards across all provide.io repositories. These hooks automatically:
 
-✅ Add SPDX headers to Python files ✅ Apply repository-specific emoji footers (auto-detected!) ✅ Validate ruff/mypy/pytest configurations ✅ Format code with ruff ✅ Type-check with mypy ✅ Catch common issues before CI
+✅ Add SPDX headers to Python files
+✅ Apply repository-specific emoji footers (auto-detected!)
+✅ Validate ruff/mypy/pytest configurations
+✅ Format code with ruff
+✅ Type-check with mypy
+✅ Catch common issues before CI
 
 **Key Benefit:** Developers never need to manually run conform scripts or remember footer patterns. Everything happens automatically on `git commit`.
 
-______________________________________________________________________
+---
 
 ## Quick Start
 
@@ -36,14 +41,13 @@ make setup-pre-commit
 
 That's it! Hooks now run automatically on every commit.
 
-______________________________________________________________________
+---
 
 ## Available Hooks
 
 ### 1. `provide-conform` - SPDX Headers & Footers
 
 **What it does:**
-
 - Automatically adds SPDX copyright and license headers
 - Detects repository from git remote (no `--footer` flag needed!)
 - Applies correct emoji footer from central registry
@@ -51,7 +55,6 @@ ______________________________________________________________________
 - Strips old footers before adding new ones
 
 **Example:**
-
 ```python
 # Before commit (missing headers)
 def my_function():
@@ -71,13 +74,13 @@ def my_function():
 ```
 
 **Repository Detection:**
-
 - Reads git remote URL (e.g., `github.com/provide-io/pyvider.git`)
 - Extracts repo name (`pyvider`)
 - Looks up footer in central registry
 - Applies correct footer automatically
 
-**Footer Registry:** The central registry is maintained in `ci-tooling/src/provide/cicd/footer_registry.json`:
+**Footer Registry:**
+The central registry is maintained in `ci-tooling/src/provide/cicd/footer_registry.json`:
 
 ```json
 {
@@ -93,7 +96,6 @@ def my_function():
 ### 2. `provide-config-check` - Configuration Validation
 
 **What it does:**
-
 - Validates `pyproject.toml` matches canonical standards
 - Checks ruff configuration (line-length, rules, format)
 - Checks mypy configuration (strict mode, options)
@@ -101,7 +103,6 @@ def my_function():
 - Reports errors before CI runs
 
 **Example Output:**
-
 ```
 Checking pyproject.toml...
 
@@ -113,7 +114,7 @@ Checking pyproject.toml...
   - [project] requires-python should be '>=3.11', got '>=3.9'
 ```
 
-______________________________________________________________________
+---
 
 ## Standard Configuration
 
@@ -157,7 +158,7 @@ repos:
       - id: provide-config-check
 ```
 
-______________________________________________________________________
+---
 
 ## Installation
 
@@ -170,11 +171,10 @@ make setup-pre-commit
 ```
 
 This will:
-
 1. Install pre-commit if not already installed
-1. Copy the standard config from `ci-tooling/configs/`
-1. Install git hooks
-1. Display confirmation
+2. Copy the standard config from `ci-tooling/configs/`
+3. Install git hooks
+4. Display confirmation
 
 ### Manual
 
@@ -190,7 +190,7 @@ pre-commit install
 pre-commit install --hook-type commit-msg
 ```
 
-______________________________________________________________________
+---
 
 ## Developer Workflow
 
@@ -258,21 +258,21 @@ pre-commit autoupdate
 # - provide.io hooks (from ci-tooling)
 ```
 
-______________________________________________________________________
+---
 
 ## Troubleshooting
 
 ### Hook Not Found
 
 **Error:**
-
 ```
 [ERROR] An error has occurred: InvalidManifestError:
 =====> /.pre-commit-config.yaml at rev 'v0.1.0'
 =====> `repo: https://github.com/provide-io/ci-tooling` does not exist.
 ```
 
-**Solution:** The ci-tooling hooks haven't been published yet. Use local path temporarily:
+**Solution:**
+The ci-tooling hooks haven't been published yet. Use local path temporarily:
 
 ```yaml
 # In .pre-commit-config.yaml
@@ -289,7 +289,8 @@ ______________________________________________________________________
 
 **Problem:** Hook applies wrong footer pattern
 
-**Solution:** Check repository detection:
+**Solution:**
+Check repository detection:
 
 ```bash
 # Test detection
@@ -318,7 +319,7 @@ If your repo is missing from the registry, add it:
 **Solutions:**
 
 1. **Run in parallel:** Pre-commit runs hooks in parallel by default
-1. **Skip slow hooks:** Add to `.pre-commit-config.yaml`:
+2. **Skip slow hooks:** Add to `.pre-commit-config.yaml`:
    ```yaml
    repos:
      - repo: https://github.com/pre-commit/mirrors-mypy
@@ -327,7 +328,7 @@ If your repo is missing from the registry, add it:
          - id: mypy
            stages: [manual]  # Only run when explicitly called
    ```
-1. **Use `fail_fast`:** Stop on first failure:
+3. **Use `fail_fast`:** Stop on first failure:
    ```yaml
    fail_fast: true
    ```
@@ -335,7 +336,6 @@ If your repo is missing from the registry, add it:
 ### Config Check Fails
 
 **Error:**
-
 ```
 ✗ 3 error(s) found:
   - [tool.ruff] line-length should be 111, got 120
@@ -343,9 +343,10 @@ If your repo is missing from the registry, add it:
   - [tool.mypy] strict should be True, got False
 ```
 
-**Solution:** Fix your `pyproject.toml` to match canonical standards. See `code-conformance-analysis.md` for required settings.
+**Solution:**
+Fix your `pyproject.toml` to match canonical standards. See `code-conformance-analysis.md` for required settings.
 
-______________________________________________________________________
+---
 
 ## CI Integration
 
@@ -368,7 +369,7 @@ jobs:
       - uses: pre-commit/action@v3.0.0
 ```
 
-______________________________________________________________________
+---
 
 ## Maintenance
 
@@ -441,53 +442,59 @@ git add .pre-commit-config.yaml
 git commit -m "Update pre-commit config from ci-tooling"
 ```
 
-______________________________________________________________________
+---
 
 ## Benefits
 
-| Before (Manual)                     | After (Pre-commit)            |
-| ----------------------------------- | ----------------------------- |
-| ❌ Remember to run `conform.py`     | ✅ Automatic on commit        |
-| ❌ Manually specify `--footer`      | ✅ Auto-detected              |
-| ❌ Forget to check config standards | ✅ Validated automatically    |
-| ❌ CI failures surprise you         | ✅ Caught locally before push |
-| ❌ Inconsistent formatting          | ✅ Ruff formats on commit     |
-| ❌ Type errors in production        | ✅ Mypy checks on commit      |
-| ⏱️ 5-10 minutes per commit          | ⏱️ 10-30 seconds per commit   |
+| Before (Manual) | After (Pre-commit) |
+|----------------|-------------------|
+| ❌ Remember to run `conform.py` | ✅ Automatic on commit |
+| ❌ Manually specify `--footer` | ✅ Auto-detected |
+| ❌ Forget to check config standards | ✅ Validated automatically |
+| ❌ CI failures surprise you | ✅ Caught locally before push |
+| ❌ Inconsistent formatting | ✅ Ruff formats on commit |
+| ❌ Type errors in production | ✅ Mypy checks on commit |
+| ⏱️ 5-10 minutes per commit | ⏱️ 10-30 seconds per commit |
 
-______________________________________________________________________
+---
 
 ## FAQ
 
-**Q: Do I need to run `conform.py` anymore?** A: No! The pre-commit hook replaces it entirely.
+**Q: Do I need to run `conform.py` anymore?**
+A: No! The pre-commit hook replaces it entirely.
 
-**Q: What if I want a different footer?** A: Add your repo to `footer_registry.json` in ci-tooling.
+**Q: What if I want a different footer?**
+A: Add your repo to `footer_registry.json` in ci-tooling.
 
-**Q: Can I customize hooks per repo?** A: Yes, edit `.pre-commit-config.yaml` locally. But standard config is recommended.
+**Q: Can I customize hooks per repo?**
+A: Yes, edit `.pre-commit-config.yaml` locally. But standard config is recommended.
 
-**Q: What if pre-commit isn't installed?** A: Run `make setup-pre-commit` - it will install it for you.
+**Q: What if pre-commit isn't installed?**
+A: Run `make setup-pre-commit` - it will install it for you.
 
-**Q: Do hooks run on CI?** A: Yes, the same hooks run via `pre-commit/action@v3.0.0`.
+**Q: Do hooks run on CI?**
+A: Yes, the same hooks run via `pre-commit/action@v3.0.0`.
 
-**Q: Can I disable a specific hook?** A: Yes, comment it out in `.pre-commit-config.yaml` or use `SKIP`:
-
+**Q: Can I disable a specific hook?**
+A: Yes, comment it out in `.pre-commit-config.yaml` or use `SKIP`:
 ```bash
 SKIP=mypy git commit -m "Skip mypy for this commit"
 ```
 
-**Q: How do I test hooks before committing?** A: Run `pre-commit run --all-files` manually.
+**Q: How do I test hooks before committing?**
+A: Run `pre-commit run --all-files` manually.
 
-______________________________________________________________________
+---
 
 ## Next Steps
 
 1. **Install hooks:** Run `make setup-pre-commit` in each repo
-1. **Test it:** Make a commit and watch hooks auto-fix your code
-1. **Spread the word:** Tell the team about zero-friction conformance
-1. **Update CI:** Add conformance check workflow
-1. **Iterate:** Add more hooks as needed (security, docs, etc.)
+2. **Test it:** Make a commit and watch hooks auto-fix your code
+3. **Spread the word:** Tell the team about zero-friction conformance
+4. **Update CI:** Add conformance check workflow
+5. **Iterate:** Add more hooks as needed (security, docs, etc.)
 
-______________________________________________________________________
+---
 
 ## Resources
 
@@ -496,6 +503,7 @@ ______________________________________________________________________
 - [ci-tooling hooks source](https://github.com/provide-io/ci-tooling/tree/main/src/provide/cicd)
 - [Code conformance analysis](./.provide/reports/code-conformance-analysis.md)
 
-______________________________________________________________________
+---
 
-**Generated:** 2025-11-10 **Maintained by:** provide.io engineering team
+**Generated:** 2025-11-10
+**Maintained by:** provide.io engineering team

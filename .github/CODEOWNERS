@@ -1,0 +1,23 @@
+# Code ownership for provide-io/ci-tooling
+
+# Global ownership - all files require review from maintainers
+* @provide-io/maintainers
+
+# Actions require additional infrastructure team review
+/actions/ @provide-io/infrastructure @provide-io/maintainers
+
+# Workflows require additional infrastructure team review
+/workflows/ @provide-io/infrastructure @provide-io/maintainers
+
+# Scripts and automation
+/scripts/ @provide-io/infrastructure
+
+# Documentation can be reviewed by docs team
+/docs/ @provide-io/docs @provide-io/maintainers
+README.md @provide-io/docs @provide-io/maintainers
+
+# Configuration files require infrastructure review
+/.github/ @provide-io/infrastructure
+pyproject.toml @provide-io/infrastructure
+*.yml @provide-io/infrastructure
+*.yaml @provide-io/infrastructure

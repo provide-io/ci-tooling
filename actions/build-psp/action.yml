@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: MIT
-
 name: 'Build PSP Package'
 description: 'Build PSPF packages using Flavorpack'
 author: 'provide.io llc'
@@ -62,7 +59,7 @@ runs:
 
     - name: Install Flavorpack
       shell: bash
-      run: uv pip install --system flavorpack
+      run: uv tool install flavorpack
 
     - name: Build PSP
       id: build

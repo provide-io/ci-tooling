@@ -27,7 +27,7 @@ jobs:
       python-version: '3.11'
 ```
 
-______________________________________________________________________
+---
 
 ### [python-release.yml](python-release/)
 
@@ -45,14 +45,13 @@ jobs:
       pypi-token: ${{ secrets.PYPI_TOKEN }}
 ```
 
-______________________________________________________________________
+---
 
 ## Workflows vs Actions
 
 ### When to Use Workflows
 
 **Reusable workflows** are best when you need:
-
 - Complete multi-job pipelines
 - Job orchestration and dependencies
 - Matrix testing across configurations
@@ -62,7 +61,6 @@ ______________________________________________________________________
 ### When to Use Actions
 
 **Individual actions** are best when you need:
-
 - Custom workflow structure
 - Fine-grained control over steps
 - Integration with other actions
@@ -256,9 +254,9 @@ secrets:
 ### Setting Secrets
 
 1. Go to repository Settings → Secrets and variables → Actions
-1. Click "New repository secret"
-1. Add secret name and value
-1. Reference in workflow with `${{ secrets.SECRET_NAME }}`
+2. Click "New repository secret"
+3. Add secret name and value
+4. Reference in workflow with `${{ secrets.SECRET_NAME }}`
 
 ## Debugging Workflows
 
@@ -279,9 +277,9 @@ env:
 ### Check Workflow Logs
 
 1. Go to Actions tab in GitHub
-1. Click on workflow run
-1. Expand job and step logs
-1. Look for errors or warnings
+2. Click on workflow run
+3. Expand job and step logs
+4. Look for errors or warnings
 
 ## Workflow Artifacts
 
@@ -305,7 +303,6 @@ Download from workflow run page or using:
 ### Cache Strategy
 
 Workflows use caching automatically:
-
 - UV cache (~/.cache/uv)
 - Python packages (workenv/)
 - Dependency manifests (pyproject.toml hash)
@@ -313,7 +310,6 @@ Workflows use caching automatically:
 ### Parallel Jobs
 
 Workflows run jobs in parallel:
-
 - Quality checks run first
 - Tests run after quality passes
 - Security scans run parallel to tests
@@ -369,7 +365,6 @@ jobs:
 ### Workflow Not Triggering
 
 Check:
-
 - Workflow file location (`.github/workflows/`)
 - Trigger conditions (`on:` section)
 - Branch protection rules
@@ -378,7 +373,6 @@ Check:
 ### Workflow Failing
 
 Common issues:
-
 - Missing secrets
 - Insufficient permissions
 - Coverage threshold too high
@@ -388,7 +382,6 @@ Common issues:
 ### Secrets Not Available
 
 Ensure:
-
 - Secrets are set in repository settings
 - Secret names match exactly
 - Secrets are passed in `secrets:` section
@@ -399,7 +392,6 @@ Ensure:
 ### From Makefile to Workflows
 
 Before (Makefile):
-
 ```makefile
 test:
     pytest tests/
@@ -410,7 +402,6 @@ quality:
 ```
 
 After (Workflow):
-
 ```yaml
 jobs:
   ci:
@@ -420,7 +411,6 @@ jobs:
 ### From Custom Workflows
 
 Before (Custom):
-
 ```yaml
 jobs:
   test:
@@ -432,7 +422,6 @@ jobs:
 ```
 
 After (Reusable):
-
 ```yaml
 jobs:
   ci:

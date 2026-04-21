@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 import re
-import subprocess
+import subprocess  # nosec
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
