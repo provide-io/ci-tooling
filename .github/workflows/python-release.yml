@@ -3,6 +3,10 @@ name: 'Reusable Python Release'
 on:
   workflow_call:
     inputs:
+      package-name:
+        description: 'PyPI distribution name (e.g. pyvider-cty, wrknv)'
+        type: string
+        required: true
       python-version:
         description: 'Python version to use'
         type: string
@@ -27,6 +31,22 @@ on:
         description: 'Run tests in parallel with pytest-xdist'
         type: boolean
         default: true
+      create-github-release:
+        description: 'Create a GitHub release from the built artifacts. Set false when the caller was triggered by an existing release.'
+        type: boolean
+        default: true
+      publish-testpypi:
+        description: 'Publish built artifacts to TestPyPI'
+        type: boolean
+        default: false
+      verify-testpypi:
+        description: 'After TestPyPI publish, install from TestPyPI and assert the version via verify-import'
+        type: boolean
+        default: false
+      verify-import:
+        description: 'Python snippet that binds v to the installed package version, e.g. "import wrknv; v = wrknv.__version__"'
+        type: string
+        default: ''
 
 env:
   FORCE_COLOR: "1"
@@ -41,20 +61,24 @@ jobs:
     if: inputs.run-tests
     runs-on: ubuntu-24.04
     steps:
+      # Fetch repo sources for test + quality runs
       - name: 📥 Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0
 
+      # Install the requested Python + uv toolchain via ci-tooling helper
       - name: 🐍 Setup Python Environment
         uses: provide-io/ci-tooling/actions/setup-python-env@main
         with:
           python-version: ${{ inputs.python-version }}
           uv-version: ${{ inputs.uv-version }}
 
+      # Lint/type-check using shared quality composite
       - name: 🎨 Quality Checks
         uses: provide-io/ci-tooling/actions/python-quality@main
 
+      # Run the test suite; coverage gate intentionally disabled for release flow
       - name: 🧪 Run Tests
         uses: provide-io/ci-tooling/actions/python-test@main
         with:
@@ -70,23 +94,27 @@ jobs:
     if: always() && (needs.pre-release-tests.result == 'success' || !inputs.run-tests)
     runs-on: ubuntu-24.04
     steps:
+      # Full clone needed for version extraction from tags
       - name: 📥 Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0
 
+      # Build environment: no dev group since we're only producing wheels/sdist
       - name: 🐍 Setup Python Environment
         uses: provide-io/ci-tooling/actions/setup-python-env@main
         with:
           python-version: ${{ inputs.python-version }}
           uv-version: ${{ inputs.uv-version }}
-          install-group: ''  # Build doesn't need dev dependencies
+          install-group: ''
 
+      # Produce wheel + sdist into dist/
       - name: 🏗️ Build Package
         uses: provide-io/ci-tooling/actions/python-build@main
         with:
           build-backend: ${{ inputs.build-backend }}
 
+      # Share artifacts with all downstream jobs (and with the caller's publish-pypi)
       - name: 📤 Upload Build Artifacts
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
         with:
@@ -100,22 +128,26 @@ jobs:
   github-release:
     name: 🏷️ GitHub Release
     needs: [build]
-    if: always() && needs.build.result == 'success'
+    # Skip when the caller was triggered by an already-existing release
+    if: always() && needs.build.result == 'success' && inputs.create-github-release
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
+      # Full clone so release-notes generation can walk history
       - name: 📥 Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0
 
+      # Pull the just-built artifacts for attaching to the release
       - name: 📦 Download Build Artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: release-artifacts
           path: dist/
 
+      # Create the GH release tagged vX.Y.Z with artifacts attached
       - name: 🏷️ Create GitHub Release
         uses: provide-io/ci-tooling/actions/github-release@main
         with:
@@ -124,17 +156,92 @@ jobs:
           prerelease: ${{ inputs.prerelease }}
 
   # ==================================================================================
+  # 🧪 Publish to TestPyPI (optional)
+  # ==================================================================================
+  publish-testpypi:
+    name: 🧪 Publish to TestPyPI
+    needs: [build]
+    if: always() && needs.build.result == 'success' && inputs.publish-testpypi
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/${{ inputs.package-name }}
+    steps:
+      # Download built artifacts for the publish action
+      - name: 📦 Download Build Artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: release-artifacts
+          path: dist/
+
+      # Publish to TestPyPI via trusted publishing (OIDC)
+      - name: 📤 Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e  # release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+  # ==================================================================================
+  # ✅ Verify TestPyPI install (optional, depends on publish-testpypi)
+  # ==================================================================================
+  verify-testpypi:
+    name: ✅ Verify TestPyPI install
+    needs: [publish-testpypi]
+    if: always() && needs.publish-testpypi.result == 'success' && inputs.verify-testpypi
+    runs-on: ubuntu-24.04
+    steps:
+      # Checkout ci-tooling for the verify script. We use the caller's repo by default
+      # (checked-out implicitly) — pull the helper script via a shallow ci-tooling clone.
+      - name: 📥 Checkout ci-tooling helpers
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          repository: provide-io/ci-tooling
+          path: .ci-tooling
+          ref: main
+
+      # Python runtime for pip install + version assertion
+      - name: 🐍 Setup Python
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57  # v8.0.0
+        with:
+          python-version: ${{ inputs.python-version }}
+          enable-cache: false
+
+      # Determine the version to verify against (from tag or from the release event)
+      - name: 🔖 Resolve version
+        id: ver
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: .ci-tooling/scripts/release/resolve-tag-version.sh >> "$GITHUB_OUTPUT"
+
+      # Retry-loop install from TestPyPI and run the import-snippet version assertion
+      - name: ✅ Install from TestPyPI and verify
+        run: |
+          .ci-tooling/scripts/release/verify-testpypi.sh \
+            "${{ inputs.package-name }}" \
+            "${{ steps.ver.outputs.version }}" \
+            "${{ inputs.verify-import }}"
+
+  # ==================================================================================
   # 🚧 Publishing Gate
   # ==================================================================================
   publishing-gate:
     name: 🚧 Publishing Gate
-    needs: [build, github-release]
-    if: always() && needs.github-release.result == 'success'
+    needs: [build, github-release, publish-testpypi, verify-testpypi]
+    # Run whenever the build succeeded; downstream optional jobs may be skipped.
+    if: always() && needs.build.result == 'success'
     runs-on: ubuntu-24.04
     steps:
+      # Summary for humans; callers use `needs: [release]` on this workflow to gate publish-pypi
       - name: 📋 Report Gate Status
+        env:
+          R_BUILD: ${{ needs.build.result }}
+          R_GHREL: ${{ needs.github-release.result }}
+          R_TEST:  ${{ needs.publish-testpypi.result }}
+          R_VERIFY: ${{ needs.verify-testpypi.result }}
         run: |
-          echo "## 🚧 Publishing Gate" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Build and GitHub Release completed successfully." >> $GITHUB_STEP_SUMMARY
-          echo "Artifacts are ready for publishing by the calling workflow." >> $GITHUB_STEP_SUMMARY
+          printf '## 🚧 Publishing Gate\n\nbuild=%s  github-release=%s  testpypi=%s  verify=%s\n\nArtifacts ready for caller publish.\n' \
+            "$R_BUILD" "$R_GHREL" "$R_TEST" "$R_VERIFY" >> "$GITHUB_STEP_SUMMARY"
