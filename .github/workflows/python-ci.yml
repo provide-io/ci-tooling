@@ -59,6 +59,14 @@ on:
         description: 'Enable parallel test execution with pytest-xdist (may break with some pytest plugins)'
         type: boolean
         default: true
+      use-wrknv:
+        description: 'Run checks via this repo''s wrknv task runner (we run <task>) instead of raw tool invocations, for local/CI command parity'
+        type: boolean
+        default: false
+      run-tests:
+        description: 'Run the pytest job(s). Disable for repos whose real verification is not pytest-based (e.g. binary conformance suites)'
+        type: boolean
+        default: true
     secrets:
       CODECOV_TOKEN:
         description: 'Codecov token for coverage upload'
@@ -99,22 +107,46 @@ jobs:
           enable-cache: true
 
       - name: 📦 Install dependencies
+        if: ${{ !inputs.use-wrknv }}
         run: uv sync --group dev
 
+      - name: 📦 Install dependencies (wrknv)
+        if: inputs.use-wrknv
+        run: uv sync --all-groups
+
+      - name: 🔧 Install wrknv
+        if: inputs.use-wrknv
+        run: uv pip install --python .venv/bin/python "wrknv @ git+https://github.com/provide-io/wrknv.git@main"
+
       - name: 🎨 Check formatting with Ruff
+        if: ${{ !inputs.use-wrknv }}
         run: |
           source .venv/bin/activate
           .ci-tooling/scripts/quality/run-ruff-format.sh "${{ inputs.source-paths }}" true
 
+      - name: 🎨 Check formatting (wrknv)
+        if: inputs.use-wrknv
+        run: .venv/bin/we run format.check
+
       - name: 🔍 Lint with Ruff
+        if: ${{ !inputs.use-wrknv }}
         run: |
           source .venv/bin/activate
           .ci-tooling/scripts/quality/run-ruff-lint.sh "${{ inputs.source-paths }}" false
 
+      - name: 🔍 Lint (wrknv)
+        if: inputs.use-wrknv
+        run: .venv/bin/we run lint
+
       - name: 🔒 Type check with MyPy
+        if: ${{ !inputs.use-wrknv }}
         run: |
           source .venv/bin/activate
           .ci-tooling/scripts/quality/run-mypy.sh src/ false || true
+
+      - name: 🔒 Type check (wrknv)
+        if: inputs.use-wrknv
+        run: .venv/bin/we run typecheck
 
   # ==================================================================================
   # 🧪 Tests - Platform Matrix
@@ -122,6 +154,7 @@ jobs:
   test:
     name: 🧪 Tests (linux_amd64, py${{ matrix.python-version }})
     needs: quality
+    if: inputs.run-tests
     runs-on: ubuntu-24.04
     strategy:
       # act cannot evaluate workflow_call boolean expressions here.
@@ -151,15 +184,29 @@ jobs:
           enable-cache: true
 
       - name: 📦 Install dependencies
+        if: ${{ !inputs.use-wrknv }}
         run: uv sync --group dev
 
+      - name: 📦 Install dependencies (wrknv)
+        if: inputs.use-wrknv
+        run: uv sync --all-groups
+
+      - name: 🔧 Install wrknv
+        if: inputs.use-wrknv
+        run: uv pip install --python .venv/bin/python "wrknv @ git+https://github.com/provide-io/wrknv.git@main"
+
       - name: 🧪 Run Tests
+        if: ${{ !inputs.use-wrknv }}
         run: |
           source .venv/bin/activate
           .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel-testing }}
 
+      - name: 🧪 Run Tests (wrknv)
+        if: inputs.use-wrknv
+        run: .venv/bin/we run ci.test
+
       - name: 📤 Upload Coverage
-        if: inputs.upload-coverage && github.actor != 'nektos/act'
+        if: inputs.upload-coverage && !inputs.use-wrknv && github.actor != 'nektos/act'
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -171,7 +218,7 @@ jobs:
   test-linux-arm:
     name: 🧪 Tests (linux_arm64, py${{ matrix.python-version }})
     needs: quality
-    if: (inputs.platform-preset == 'standard' || inputs.platform-preset == 'full') && github.actor != 'nektos/act'
+    if: inputs.run-tests && (inputs.platform-preset == 'standard' || inputs.platform-preset == 'full') && github.actor != 'nektos/act'
     runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
@@ -200,17 +247,31 @@ jobs:
           enable-cache: true
 
       - name: 📦 Install dependencies
+        if: ${{ !inputs.use-wrknv }}
         run: uv sync --group dev
 
+      - name: 📦 Install dependencies (wrknv)
+        if: inputs.use-wrknv
+        run: uv sync --all-groups
+
+      - name: 🔧 Install wrknv
+        if: inputs.use-wrknv
+        run: uv pip install --python .venv/bin/python "wrknv @ git+https://github.com/provide-io/wrknv.git@main"
+
       - name: 🧪 Run Tests
+        if: ${{ !inputs.use-wrknv }}
         run: |
           source .venv/bin/activate
           .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel-testing }}
 
+      - name: 🧪 Run Tests (wrknv)
+        if: inputs.use-wrknv
+        run: .venv/bin/we run ci.test
+
   test-macos-arm:
     name: 🧪 Tests (darwin_arm64, py${{ matrix.python-version }})
     needs: quality
-    if: (inputs.platform-preset == 'standard' || inputs.platform-preset == 'full') && github.actor != 'nektos/act'
+    if: inputs.run-tests && (inputs.platform-preset == 'standard' || inputs.platform-preset == 'full') && github.actor != 'nektos/act'
     runs-on: macos-15
     strategy:
       fail-fast: false
@@ -239,17 +300,31 @@ jobs:
           enable-cache: true
 
       - name: 📦 Install dependencies
+        if: ${{ !inputs.use-wrknv }}
         run: uv sync --group dev
 
+      - name: 📦 Install dependencies (wrknv)
+        if: inputs.use-wrknv
+        run: uv sync --all-groups
+
+      - name: 🔧 Install wrknv
+        if: inputs.use-wrknv
+        run: uv pip install --python .venv/bin/python "wrknv @ git+https://github.com/provide-io/wrknv.git@main"
+
       - name: 🧪 Run Tests
+        if: ${{ !inputs.use-wrknv }}
         run: |
           source .venv/bin/activate
           .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel-testing }}
 
+      - name: 🧪 Run Tests (wrknv)
+        if: inputs.use-wrknv
+        run: .venv/bin/we run ci.test
+
   test-macos-intel:
     name: 🧪 Tests (darwin_amd64, py${{ matrix.python-version }})
     needs: quality
-    if: (inputs.platform-preset == 'standard' || inputs.platform-preset == 'full') && github.actor != 'nektos/act'
+    if: inputs.run-tests && (inputs.platform-preset == 'standard' || inputs.platform-preset == 'full') && github.actor != 'nektos/act'
     runs-on: macos-15-intel
     strategy:
       fail-fast: false
@@ -278,18 +353,32 @@ jobs:
           enable-cache: true
 
       - name: 📦 Install dependencies
+        if: ${{ !inputs.use-wrknv }}
         run: uv sync --group dev
 
+      - name: 📦 Install dependencies (wrknv)
+        if: inputs.use-wrknv
+        run: uv sync --all-groups
+
+      - name: 🔧 Install wrknv
+        if: inputs.use-wrknv
+        run: uv pip install --python .venv/bin/python "wrknv @ git+https://github.com/provide-io/wrknv.git@main"
+
       - name: 🧪 Run Tests
+        if: ${{ !inputs.use-wrknv }}
         run: |
           source .venv/bin/activate
           .ci-tooling/scripts/test/run-pytest.sh "${{ inputs.test-directory }}" ${{ inputs.coverage-threshold }} ${{ inputs.parallel-testing }}
+
+      - name: 🧪 Run Tests (wrknv)
+        if: inputs.use-wrknv
+        run: .venv/bin/we run ci.test
 
   # Windows tests (full preset or include-windows)
   test-windows:
     name: 🧪 Tests (windows_amd64, py${{ matrix.python-version }})
     needs: quality
-    if: (inputs.platform-preset == 'full' || inputs.include-windows) && github.actor != 'nektos/act'
+    if: inputs.run-tests && (inputs.platform-preset == 'full' || inputs.include-windows) && github.actor != 'nektos/act'
     runs-on: windows-2022
     strategy:
       fail-fast: false
@@ -329,7 +418,7 @@ jobs:
   test-windows-arm:
     name: 🧪 Tests (windows_arm64, py${{ matrix.python-version }})
     needs: quality
-    if: (inputs.platform-preset == 'full' || inputs.include-windows) && github.actor != 'nektos/act'
+    if: inputs.run-tests && (inputs.platform-preset == 'full' || inputs.include-windows) && github.actor != 'nektos/act'
     runs-on: windows-11-arm
     strategy:
       fail-fast: false
@@ -400,15 +489,31 @@ jobs:
           enable-cache: true
 
       - name: 📦 Install dependencies
+        if: ${{ !inputs.use-wrknv }}
         run: |
           uv sync --group dev
           source .venv/bin/activate
           uv pip install bandit pip-audit
 
+      - name: 📦 Install dependencies (wrknv)
+        if: inputs.use-wrknv
+        run: uv sync --all-groups
+
+      - name: 🔧 Install wrknv
+        if: inputs.use-wrknv
+        run: |
+          uv pip install --python .venv/bin/python "wrknv @ git+https://github.com/provide-io/wrknv.git@main"
+          uv pip install --python .venv/bin/python pip-audit
+
       - name: 🔒 Run Bandit security scan
+        if: ${{ !inputs.use-wrknv }}
         run: |
           source .venv/bin/activate
           .ci-tooling/scripts/security/run-bandit.sh src/ bandit-report.json -ll
+
+      - name: 🔒 Run Bandit (wrknv)
+        if: inputs.use-wrknv
+        run: .venv/bin/we run security
 
       - name: 🔍 Check for known vulnerabilities
         run: |
@@ -456,7 +561,7 @@ jobs:
   build:
     name: 📦 Build
     needs: [test, test-linux-arm, test-macos-arm, test-macos-intel]
-    if: always() && needs.test.result == 'success'
+    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped')
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
@@ -520,9 +625,15 @@ jobs:
             echo "| Secret Scan | ${{ needs.secret-scan.result == 'success' && '✅ Passed' || '⚠️ Issues' }} |" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # Overall status
+          # Overall status (skipped test/build jobs are OK when run-tests: false)
           OVERALL="✅ Success"
-          if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.build.result }}" != "success" ]; then
+          if [ "${{ needs.quality.result }}" != "success" ]; then
+            OVERALL="❌ Failed"
+          fi
+          if [ "${{ needs.test.result }}" != "success" ] && [ "${{ needs.test.result }}" != "skipped" ]; then
+            OVERALL="❌ Failed"
+          fi
+          if [ "${{ needs.build.result }}" != "success" ] && [ "${{ needs.build.result }}" != "skipped" ]; then
             OVERALL="❌ Failed"
           fi
 
