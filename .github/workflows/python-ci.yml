@@ -67,6 +67,10 @@ on:
         description: 'Run the pytest job(s). Disable for repos whose real verification is not pytest-based (e.g. binary conformance suites)'
         type: boolean
         default: true
+      no-sources:
+        description: 'Resolve dependencies from the registry, ignoring [tool.uv.sources]. Suite repos point siblings at ../<repo> for local development; CI checks out one repo, so those paths do not exist here and the published metadata is what should be verified anyway'
+        type: boolean
+        default: false
     secrets:
       CODECOV_TOKEN:
         description: 'Codecov token for coverage upload'
@@ -81,6 +85,10 @@ env:
   # in that repo need the slack under -n auto's CPU contention; unused by
   # every other repo on this workflow, so it's a no-op elsewhere.
   PROVIDE_TEST_TIMEOUT_FACTOR: "3"
+  # Appended to every `uv sync` below. Passed as a CLI flag rather than uv's
+  # UV_NO_SOURCES environment variable because an env var cannot be conditionally
+  # unset in Actions, and an empty value is not reliably read as false.
+  UV_SYNC_FLAGS: ${{ inputs.no-sources && '--no-sources' || '' }}
 
 jobs:
   # ==================================================================================
@@ -113,11 +121,11 @@ jobs:
 
       - name: 📦 Install dependencies
         if: ${{ !inputs.use-wrknv }}
-        run: uv sync --group dev
+        run: uv sync --group dev $UV_SYNC_FLAGS
 
       - name: 📦 Install dependencies (wrknv)
         if: inputs.use-wrknv
-        run: uv sync --all-groups
+        run: uv sync --all-groups $UV_SYNC_FLAGS
 
       - name: 🔧 Install wrknv
         if: inputs.use-wrknv
@@ -190,11 +198,11 @@ jobs:
 
       - name: 📦 Install dependencies
         if: ${{ !inputs.use-wrknv }}
-        run: uv sync --group dev
+        run: uv sync --group dev $UV_SYNC_FLAGS
 
       - name: 📦 Install dependencies (wrknv)
         if: inputs.use-wrknv
-        run: uv sync --all-groups
+        run: uv sync --all-groups $UV_SYNC_FLAGS
 
       - name: 🔧 Install wrknv
         if: inputs.use-wrknv
@@ -253,11 +261,11 @@ jobs:
 
       - name: 📦 Install dependencies
         if: ${{ !inputs.use-wrknv }}
-        run: uv sync --group dev
+        run: uv sync --group dev $UV_SYNC_FLAGS
 
       - name: 📦 Install dependencies (wrknv)
         if: inputs.use-wrknv
-        run: uv sync --all-groups
+        run: uv sync --all-groups $UV_SYNC_FLAGS
 
       - name: 🔧 Install wrknv
         if: inputs.use-wrknv
@@ -306,11 +314,11 @@ jobs:
 
       - name: 📦 Install dependencies
         if: ${{ !inputs.use-wrknv }}
-        run: uv sync --group dev
+        run: uv sync --group dev $UV_SYNC_FLAGS
 
       - name: 📦 Install dependencies (wrknv)
         if: inputs.use-wrknv
-        run: uv sync --all-groups
+        run: uv sync --all-groups $UV_SYNC_FLAGS
 
       - name: 🔧 Install wrknv
         if: inputs.use-wrknv
@@ -359,11 +367,11 @@ jobs:
 
       - name: 📦 Install dependencies
         if: ${{ !inputs.use-wrknv }}
-        run: uv sync --group dev
+        run: uv sync --group dev $UV_SYNC_FLAGS
 
       - name: 📦 Install dependencies (wrknv)
         if: inputs.use-wrknv
-        run: uv sync --all-groups
+        run: uv sync --all-groups $UV_SYNC_FLAGS
 
       - name: 🔧 Install wrknv
         if: inputs.use-wrknv
@@ -412,7 +420,7 @@ jobs:
           enable-cache: true
 
       - name: 📦 Install dependencies
-        run: uv sync --group dev
+        run: uv sync --group dev $UV_SYNC_FLAGS
 
       - name: 🧪 Run Tests
         shell: pwsh
@@ -452,7 +460,7 @@ jobs:
           enable-cache: true
 
       - name: 📦 Install dependencies
-        run: uv sync --group dev
+        run: uv sync --group dev $UV_SYNC_FLAGS
 
       - name: 🧪 Run Tests
         shell: pwsh
@@ -496,13 +504,13 @@ jobs:
       - name: 📦 Install dependencies
         if: ${{ !inputs.use-wrknv }}
         run: |
-          uv sync --group dev
+          uv sync --group dev $UV_SYNC_FLAGS
           source .venv/bin/activate
           uv pip install bandit pip-audit
 
       - name: 📦 Install dependencies (wrknv)
         if: inputs.use-wrknv
-        run: uv sync --all-groups
+        run: uv sync --all-groups $UV_SYNC_FLAGS
 
       - name: 🔧 Install wrknv
         if: inputs.use-wrknv
