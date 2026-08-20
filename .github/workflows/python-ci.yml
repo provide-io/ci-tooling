@@ -44,7 +44,18 @@ on:
         type: string
         default: 'standard'
       include-windows:
-        description: 'Include Windows platforms (off by default, overrides preset)'
+        description: 'Include Windows amd64 (off by default, overrides preset)'
+        type: boolean
+        default: false
+      # Separate from include-windows because the two are not equally available.
+      # A project can be healthy on Windows amd64 and unable to install at all
+      # on Windows arm64: grpcio 1.83.0 publishes win32 and win_amd64 wheels
+      # only (grpc/grpc#39064 open upstream) and cryptography 50.0.0 publishes
+      # win_amd64 only, so anything requiring them fails during `uv sync` on
+      # windows-11-arm long before a test runs. Asking for Windows coverage
+      # should not force a caller to take a permanently red job.
+      include-windows-arm:
+        description: 'Include Windows arm64 (off by default; see the note above on wheel availability)'
         type: boolean
         default: false
       fail-fast:
@@ -383,7 +394,7 @@ jobs:
         if: inputs.use-wrknv
         run: .venv/bin/we run ci.test
 
-  # Windows tests (full preset or include-windows)
+  # Windows amd64 tests (full preset or include-windows)
   test-windows:
     name: 🧪 Tests (windows_amd64, py${{ matrix.python-version }})
     needs: quality
@@ -427,7 +438,10 @@ jobs:
   test-windows-arm:
     name: 🧪 Tests (windows_arm64, py${{ matrix.python-version }})
     needs: quality
-    if: inputs.run-tests && (inputs.platform-preset == 'full' || inputs.include-windows) && github.actor != 'nektos/act'
+    # `full` still means every platform, so a caller asking for full is
+    # unaffected. What changed is that include-windows no longer drags arm64
+    # in with it.
+    if: inputs.run-tests && (inputs.platform-preset == 'full' || inputs.include-windows-arm) && github.actor != 'nektos/act'
     runs-on: windows-11-arm
     strategy:
       fail-fast: false
@@ -621,6 +635,9 @@ jobs:
 
           if [ "${{ inputs.platform-preset }}" = "full" ] || [ "${{ inputs.include-windows }}" = "true" ]; then
             echo "| Tests (windows_amd64) | ${{ needs.test-windows.result == 'success' && '✅ Passed' || (needs.test-windows.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ inputs.platform-preset }}" = "full" ] || [ "${{ inputs.include-windows-arm }}" = "true" ]; then
             echo "| Tests (windows_arm64) | ${{ needs.test-windows-arm.result == 'success' && '✅ Passed' || (needs.test-windows-arm.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           fi
 
