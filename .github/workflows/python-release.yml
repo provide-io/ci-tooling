@@ -36,6 +36,15 @@ env:
   FORCE_COLOR: "1"
   UV_SYSTEM_PYTHON: "1"
 
+# Default for every job below. Without it these jobs inherit whatever the
+# caller granted at the `uses:` site, which is `contents: write` -- so the jobs
+# that install a project's entire dependency tree from PyPI and execute it
+# (tests, build) were holding a writable repository token. Only github-release
+# needs write, and it asks for it explicitly. A new job added here starts
+# read-only unless it says otherwise.
+permissions:
+  contents: read
+
 # Publishing (TestPyPI + PyPI) intentionally stays in caller workflows:
 # PyPI Trusted Publishing matches on OIDC job_workflow_ref, which points at
 # the workflow that actually runs the publish action. If publish ran here in
