@@ -1,17 +1,39 @@
-name: CI
+# CI workflow for a Python package.
+#
+# Copy into .github/workflows/. Everything below `with:` is optional -- the
+# reusable workflow's defaults are documented in
+# .github/workflows/python-ci.yml in this repository. `we tasks` lists what
+# `use-wrknv: true` will run.
+name: ⚙️ Continuous Integration
 
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
+
+# security-events: write is what lets the security scan upload SARIF to the
+# repository's code-scanning alerts. Drop it along with run-security if you
+# are not using them.
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ci:
-    uses: provide-io/ci-tooling/workflows/python-ci.yml@v0
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.4.2
     with:
       python-version: '3.11'
+      # Run checks through wrknv so CI and local dev use the same commands.
+      use-wrknv: true
+      # minimal (linux x64) | standard (+ macos) | full (+ windows).
+      platform-preset: standard
       coverage-threshold: 80
       run-security: true
-    secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      run-secret-scan: true
+    secrets: inherit

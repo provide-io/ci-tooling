@@ -171,11 +171,18 @@ jobs:
 
 ## 📋 Project Templates
 
-Ready-to-use workflow templates for different project types:
+A ready-to-use starting point, mirroring the workflows the provide.io Python
+repositories actually run:
 
-- **[Basic Python](https://github.com/provide-io/ci-tooling/tree/main/templates/basic-python)** - Simple Python package
-- **[Terraform Provider](https://github.com/provide-io/ci-tooling/tree/main/templates/terraform-provider)** - Provider with tests
-- **[Full Featured](https://github.com/provide-io/ci-tooling/tree/main/templates/full-featured)** - Complete CI/CD with security
+- **[Basic Python](https://github.com/provide-io/ci-tooling/tree/main/templates/basic-python)** -
+  a package published to PyPI via Trusted Publishing. CI, release, CycloneDX
+  SBOM and sigstore signing. Its
+  [README](https://github.com/provide-io/ci-tooling/tree/main/templates/basic-python/README.md)
+  covers the placeholders to fill in and why the release workflow separates
+  the jobs the way it does.
+
+Templates named "Terraform Provider" and "Full Featured" were listed here for
+a while but never existed; both links 404'd.
 
 ## 🔄 Versioning
 
