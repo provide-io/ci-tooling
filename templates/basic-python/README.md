@@ -47,3 +47,15 @@ still read and bump them.
 
 **`cyclonedx-bom` is pinned inside the script**, for the same reason: it is
 third-party code fetched from PyPI and executed during a release.
+
+**The SBOM declares its own subject and checks itself.** `cyclonedx-py
+environment` describes an interpreter, not a project, so without `--pyproject`
+the document has no root component and the package it is about sits among its
+dependencies as one entry of many. The script supplies one, fills in the
+version and purl from the wheel filename (`dynamic = ["version"]` leaves
+cyclonedx-py nothing to read), and then verifies two things before the file is
+accepted: the root component matches the wheel, and every non-extra
+`Requires-Dist` from the wheel's metadata is present. The second check is the
+one that catches an SBOM describing the wrong environment -- the mistake that
+put 77 useless SBOMs into this ecosystem's releases. Set `SBOM_MC_TYPE` to
+`application` for a CLI-first distribution; it defaults to `library`.
