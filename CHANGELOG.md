@@ -13,6 +13,11 @@ checkout used by the TestPyPI verification step.
 
 ## [0.4.3] - 2026-08-25
 
+Versioned as a patch, but it is a minor release: it adds four `python-ci`
+inputs. The number was chosen against the release workflow's diff alone, before
+the other seventeen commits in the range were read. Left as published rather
+than retagged, since consumers pin to it. The next feature release is 0.5.0.
+
 ### Added
 
 - **`python-ci` gained four inputs.** `use-wrknv` runs checks through `we run <task>` so CI and local development execute the same commands. `run-tests` lets a caller take the pipeline without the test job. `no-sources` passes `--no-sources` to `uv sync`, for suite repositories that point siblings at `../<repo>` editable path dependencies: CI checks out one repository, those paths do not exist on the runner, and the install step went red before a single check ran. `include-windows-arm` splits Windows arm64 out from `include-windows`, which had gated both Windows jobs together — and anything depending on grpcio or cryptography cannot pass on windows-11-arm, because grpcio 1.83.0 publishes win32 and win_amd64 wheels only (grpc/grpc#39064) and cryptography 50.0.0 publishes win_amd64 only. The choice was no Windows coverage or a permanently red job, and every repository picked the former. All four default to their previous behaviour.
