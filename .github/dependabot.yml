@@ -13,6 +13,13 @@ updates:
     commit-message:
       prefix: "🔼"
       include: "scope"
+    # gitleaks-action v3 requires a GITLEAKS_LICENSE secret for org-owned
+    # repositories. Without one every secret-scan job soft-fails and scans
+    # nothing, which is how it sat for a while before 2b576dd pinned v2.3.9
+    # back. Do not let this be bumped until a licence exists.
+    ignore:
+      - dependency-name: "gitleaks/gitleaks-action"
+        versions: [">=3.0.0"]
 
   # Action dependencies in individual action directories
   - package-ecosystem: "github-actions"
