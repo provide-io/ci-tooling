@@ -20,6 +20,9 @@ set -euo pipefail
 # Pinned: this runs code fetched from PyPI inside the release workflow. Bump
 # deliberately, and re-run the script locally against a fresh `uv build` first.
 CYCLONEDX_BOM_VERSION="7.3.1"
+# Same rule. Used only by the verification below, to evaluate the environment
+# markers on the wheel's Requires-Dist.
+PACKAGING_VERSION="26.3"
 
 # CycloneDX type of the root component: `library` for a distribution other code
 # imports, `application` for a CLI-first one. Only affects how consumers
@@ -43,7 +46,15 @@ uvx --from "cyclonedx-bom==${CYCLONEDX_BOM_VERSION}" cyclonedx-py environment "$
   --mc-type "$MC_TYPE" \
   --output-format json -o "$OUT"
 
-python3 - "$DIST_DIR" "$OUT" <<'PYEOF'
+# Installed *after* the SBOM is generated, and that order is load-bearing: this
+# venv is the environment the document describes, so anything added to it before
+# the previous step would be published as a component of the release.
+uv pip install --quiet --python "$VENV/bin/python" "packaging==${PACKAGING_VERSION}"
+
+# Run under the venv's interpreter rather than the runner's. The check below
+# evaluates environment markers, and the only environment whose answers mean
+# anything here is the one the SBOM describes.
+"$VENV/bin/python" - "$DIST_DIR" "$OUT" <<'PYEOF'
 """Complete the root component from the wheel, then verify the SBOM.
 
 Every project here declares `dynamic = ["version"]`, so cyclonedx-py reads the
@@ -57,6 +68,9 @@ import pathlib
 import re
 import sys
 import zipfile
+
+from packaging.markers import UndefinedComparison, UndefinedEnvironmentName
+from packaging.requirements import InvalidRequirement, Requirement
 
 dist, out = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 
@@ -78,8 +92,44 @@ if wheel is None:
 raw_name, version = wheel.name.split("-")[:2]
 expected = normalize(raw_name)
 
-# Requires-Dist from the wheel's own metadata, minus anything gated behind an
-# extra: those are not installed, so they are legitimately absent below.
+
+def installed_here(marker):
+    """True if a dependency carrying this marker is installed in this venv.
+
+    The wheel above was installed without extras, so anything gated behind one
+    is legitimately absent. Two probes decide that: if the marker's answer
+    changes with `extra`, it is extra-gated whatever the operator. Markers
+    raise at evaluate time, not parse time, so both probes are guarded.
+    """
+    if marker is None:
+        return True
+    results = set()
+    for probe in ("", "\x00no-such-extra"):
+        try:
+            results.add(marker.evaluate({"extra": probe}))
+        except (UndefinedComparison, UndefinedEnvironmentName) as exc:
+            fail(f"cannot evaluate the environment marker {str(marker)!r}: {exc}")
+    return False if len(results) > 1 else results.pop()
+
+
+# Requires-Dist from the wheel's own metadata, narrowed to what this
+# environment should actually hold. A marker decides that, so a marker is what
+# has to be evaluated -- not a substring of one.
+#
+# The `extra == "cli"` case used to be handled by a literal `"extra ==" in spec`
+# test, which is a hand-rolled evaluation of one marker and blind to every
+# other. It failed provide-foundation's v0.4.3 release, where
+# `tzdata; sys_platform == "win32"` carries no extra and so was demanded on the
+# Linux runner that builds the SBOM -- the one platform where the marker
+# correctly keeps it uninstalled. A project with no conditional dependency today
+# still inherits the fix, so the first one it adds does not break a release to
+# discover it.
+#
+# Extras are decided by whether the marker's answer depends on `extra` at all,
+# not by evaluating it against an empty one. `extra == "cli"` is false for an
+# empty extra, but `extra in "cli"` is *true* -- "" is a substring of every
+# string -- so the sentinel alone would demand an extra-gated dependency that
+# was correctly never installed, and abort the release blaming the venv.
 requires = set()
 with zipfile.ZipFile(wheel) as zf:
     metadata_name = next((n for n in zf.namelist() if n.endswith(".dist-info/METADATA")), None)
@@ -89,9 +139,13 @@ with zipfile.ZipFile(wheel) as zf:
         if not line.startswith("Requires-Dist:"):
             continue
         spec = line.split(":", 1)[1].strip()
-        if "extra ==" in spec:
+        try:
+            req = Requirement(spec)
+        except InvalidRequirement as exc:
+            fail(f"{wheel.name} has an unparsable Requires-Dist {spec!r}: {exc}")
+        if not installed_here(req.marker):
             continue
-        requires.add(normalize(re.split(r"[\s<>=!~;\[(]", spec, maxsplit=1)[0]))
+        requires.add(normalize(req.name))
 
 bom = json.loads(out.read_text())
 components = bom.get("components") or []

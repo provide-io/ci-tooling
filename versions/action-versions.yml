@@ -31,8 +31,11 @@ actions:
     tag: v1.2.1
     sha: 0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3
   sigstore/gh-action-sigstore-python:
-    tag: v3.3.0
-    sha: 04cffa1d795717b140764e8b640de88853c92acc
+    # Do not pin below v3.1.0: v3.0.0 installs sigstore-python 3.x, whose
+    # bundled TUF root can no longer verify Sigstore's production root and
+    # aborts signing with "root was signed by 0/3 keys".
+    tag: v3.5.0
+    sha: 790bc6befb9d733738f18d8f895854b453640ec9
   peaceiris/actions-gh-pages:
     tag: v4.0.0
     sha: 4f9cc6602d3f66b9c108549d475ec49e8ef4d45e
