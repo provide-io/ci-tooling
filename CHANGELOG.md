@@ -11,6 +11,13 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-03
+
+Branch pins, corrected by use. Everything here came out of pinning a real
+repository at a real fork rather than reasoning about it: the short form could
+not reach another org, the allowlist rejected the org the forks live in, and a
+pin naming the wrong distribution failed silently.
+
 ### Added
 
 - **Pins are verified against the lockfile after the sync.** uv accepts an
