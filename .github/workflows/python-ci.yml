@@ -36,7 +36,7 @@ on:
         type: boolean
         default: false
       matrix-testing:
-        description: 'Enable matrix testing across Python versions (3.11, 3.12, 3.13)'
+        description: 'Enable matrix testing across Python versions (3.11, 3.12, 3.13, 3.14)'
         type: boolean
         default: false
       platform-preset:
@@ -180,7 +180,7 @@ jobs:
       # act cannot evaluate workflow_call boolean expressions here.
       fail-fast: false
       matrix:
-        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13", "3.14"]' || format('["{0}"]', inputs.python-version)) }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -243,7 +243,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13", "3.14"]' || format('["{0}"]', inputs.python-version)) }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -296,7 +296,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13", "3.14"]' || format('["{0}"]', inputs.python-version)) }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -349,7 +349,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13", "3.14"]' || format('["{0}"]', inputs.python-version)) }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -403,7 +403,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13", "3.14"]' || format('["{0}"]', inputs.python-version)) }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -446,7 +446,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13"]' || format('["{0}"]', inputs.python-version)) }}
+        python-version: ${{ fromJson(inputs.matrix-testing && '["3.11", "3.12", "3.13", "3.14"]' || format('["{0}"]', inputs.python-version)) }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
