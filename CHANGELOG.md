@@ -11,6 +11,44 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+### Added
+
+- **Branch pins: resolve a dependency from a git ref instead of the registry.**
+  A pull request can now build against unreleased work in a sibling repository.
+  Six layers feed one resolution, ordered so that manual-outside-git beats
+  in-git and narrower scope beats wider: `workflow_dispatch` input, PR label
+  (`pin:<pkg>@<ref>`), `CI_PINS` repository variable, `.ci/pins.toml`, the
+  `package-pins` workflow input, then opt-in sibling-branch matching. Four of
+  the six need no commit. Only `.ci/pins.toml` carries `when` conditions
+  (`event`, `branch`, `base`, `label`, `input`). Off unless a caller asks for
+  it; see `docs/branch-pins.md`.
+
+  uv honours overrides only from `[tool.uv] override-dependencies` in
+  `pyproject.toml` — `UV_OVERRIDE` is ignored by `uv sync`/`uv lock`, and the
+  same key in a `uv.toml` is accepted and silently ignored — so the file is
+  rewritten on the runner and restored from a `[tool.ci-tooling-pins]` marker.
+  Overrides do not reach a built distribution: a wheel built with a pin active
+  still carries the `Requires-Dist` from `[project] dependencies`.
+
+  Every pin URL is checked against `pin-allowed-orgs` (default
+  `github.com/provide-io/*`) as `host/owner/repo`; non-HTTPS URLs, userinfo
+  before the host, and `..` in the path are rejected. PR bodies are
+  deliberately not a layer — on a public repository that is attacker-controlled
+  text reaching dependency resolution.
+
+  The resolved set is hashed into uv's `cache-suffix`, so a pinned run cannot
+  poison the cache entry an unpinned run reads.
+
+- **`pin-guard` jobs in `python-ci` and `python-release`.** A pin that outlives
+  its branch would silently keep a repository on someone's feature work, so a
+  push to the default branch and any release both fail while `.ci/pins.toml`
+  declares anything. A pre-commit hook covers the same mistake locally.
+
+- **`deps.pin` / `deps.unpin` wrknv tasks.** Local front door over the same
+  scripts CI runs, so a pinned environment is reproducible off a runner. Local
+  mode applies every pin in the file and ignores `when` conditions, since there
+  is no event, base ref or label to test against.
+
 ## [0.5.0] - 2026-09-03
 
 A feature release, and the first cut of the moving `v0` tag since 2026-08-20.

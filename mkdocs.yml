@@ -70,6 +70,8 @@ nav:
     - Python CI: workflows/python-ci.md
     - Python Release: workflows/python-release.md
 
+  - Branch Pins: branch-pins.md
+
   - Pre-commit Hooks: pre-commit-hooks.md
 
   - Design Documents:

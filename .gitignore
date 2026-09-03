@@ -43,6 +43,9 @@ bf-*.txt
 # Provide tooling artifacts
 .provide/foundry/
 
+# Branch pins applied to the working tree (never committed)
+.ci/.pins-applied.json
+
 # Terraform state (sensitive)
 *.tfstate
 *.tfstate.*

@@ -35,6 +35,18 @@ inputs:
     description: 'Dependency groups to install (for PEP 735)'
     required: false
     default: 'dev'
+  package-pins:
+    description: 'Branch pins as <pkg>@<ref>, comma or newline separated'
+    required: false
+    default: ''
+  pins-file:
+    description: 'Branch-scoped pins file'
+    required: false
+    default: '.ci/pins.toml'
+  pin-allowed-orgs:
+    description: 'Glob patterns, as host/owner/repo, that a pin URL must match'
+    required: false
+    default: 'github.com/provide-io/*'
   upload-artifacts:
     description: 'Upload build artifacts'
     required: false
@@ -63,8 +75,33 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
+    # Resolve branch pins before uv exists so the digest can key its cache, then
+    # patch them in before anything syncs. Scripts are called directly because a
+    # relative `uses:` inside a composite action resolves against the workspace.
+    - name: 📌 Resolve branch pins
+      id: pins
+      shell: bash
+      env:
+        CI_TOOLING_PATH: ${{ github.action_path }}/../..
+        CALLER_PINS: ${{ inputs.package-pins }}
+        VARIABLE_PINS: ${{ vars.CI_PINS }}
+        PINS_FILE: ${{ inputs.pins-file }}
+        ALLOWED_ORGS: ${{ inputs.pin-allowed-orgs }}
+        LABEL_PINS_JSON: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+      run: "$CI_TOOLING_PATH/scripts/deps/resolve-pins.sh"
+
     - name: 📦 Setup UV
       uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57  # v8.0.0
+      with:
+        cache-suffix: pins-${{ steps.pins.outputs.digest }}
+
+    - name: 📌 Apply branch pins
+      if: steps.pins.outputs.count != '0'
+      shell: bash
+      env:
+        CI_TOOLING_PATH: ${{ github.action_path }}/../..
+        PINS: ${{ steps.pins.outputs.pins }}
+      run: "$CI_TOOLING_PATH/scripts/deps/apply-pins.sh"
 
     - name: 🔧 Install Dependencies
       shell: bash

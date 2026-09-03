@@ -52,3 +52,9 @@ find . -type f -name '*.pyc' -delete 2>/dev/null || true
 
 [tasks.setup]
 _default = "uv sync --all-groups"
+
+# Branch pins: force a dependency to resolve from a git ref locally, the same way
+# CI does. The engine lives in ci-tooling; these are only the front door.
+[tasks.deps]
+pin = "uv run --no-project .ci-tooling/scripts/deps/apply_pins.py apply --pins-file .ci/pins.toml"
+unpin = "uv run --no-project .ci-tooling/scripts/deps/apply_pins.py clear"

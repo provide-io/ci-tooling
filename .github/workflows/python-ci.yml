@@ -82,6 +82,38 @@ on:
         description: 'Resolve dependencies from the registry, ignoring [tool.uv.sources]. Suite repos point siblings at ../<repo> for local development; CI checks out one repo, so those paths do not exist here and the published metadata is what should be verified anyway'
         type: boolean
         default: false
+      # --- branch pins -------------------------------------------------------
+      # Force a package to resolve from a git ref instead of the registry, so a
+      # PR here can build against an unreleased change in a sibling repo. See
+      # docs/branch-pins.md for the layers and their precedence.
+      dispatch-pins:
+        description: 'Pins from the caller''s workflow_dispatch input, as <pkg>@<ref> (highest precedence)'
+        type: string
+        default: ''
+      package-pins:
+        description: 'Pins fixed by the calling workflow, as <pkg>@<ref>'
+        type: string
+        default: ''
+      pins-file:
+        description: 'Branch-scoped pins file; the only layer that carries when-conditions'
+        type: string
+        default: '.ci/pins.toml'
+      auto-pin-siblings:
+        description: 'Pin any sibling repo that has a branch with the same name as this one. Off by default: it makes the result depend on state outside the commit'
+        type: boolean
+        default: false
+      sibling-repos:
+        description: 'Sibling repository names considered for auto-pinning'
+        type: string
+        default: ''
+      pin-allowed-orgs:
+        description: 'Glob patterns, as host/owner/repo, that a pin URL must match'
+        type: string
+        default: 'github.com/provide-io/*'
+      pin-inputs-json:
+        description: 'JSON object of caller values matched by a pin''s when.input condition'
+        type: string
+        default: '{}'
     secrets:
       CODECOV_TOKEN:
         description: 'Codecov token for coverage upload'
@@ -124,11 +156,36 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
 
+      # Work out which packages this run pins. Runs before uv exists because the
+      # digest it emits becomes uv's cache suffix: a pinned run must not share a
+      # cache entry with an unpinned one.
+      - name: 📌 Resolve branch pins
+        id: pins
+        uses: ./.ci-tooling/actions/resolve-pins
+        with:
+          dispatch-pins: ${{ inputs.dispatch-pins }}
+          variable-pins: ${{ vars.CI_PINS }}
+          caller-pins: ${{ inputs.package-pins }}
+          pins-file: ${{ inputs.pins-file }}
+          auto-pin-siblings: ${{ inputs.auto-pin-siblings }}
+          sibling-repos: ${{ inputs.sibling-repos }}
+          allowed-orgs: ${{ inputs.pin-allowed-orgs }}
+          label-pins-json: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          inputs-json: ${{ inputs.pin-inputs-json }}
+
       - name: ⚡ Install UV
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
+          cache-suffix: pins-${{ steps.pins.outputs.digest }}
+
+      # Patch the pins into [tool.uv] override-dependencies. uv honours overrides
+      # only from pyproject.toml, so the file has to be rewritten on disk.
+      - name: 📌 Apply branch pins
+        uses: ./.ci-tooling/actions/apply-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
 
       - name: 📦 Install dependencies
         if: ${{ !inputs.use-wrknv }}
@@ -205,11 +262,36 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # Work out which packages this run pins. Runs before uv exists because the
+      # digest it emits becomes uv's cache suffix: a pinned run must not share a
+      # cache entry with an unpinned one.
+      - name: 📌 Resolve branch pins
+        id: pins
+        uses: ./.ci-tooling/actions/resolve-pins
+        with:
+          dispatch-pins: ${{ inputs.dispatch-pins }}
+          variable-pins: ${{ vars.CI_PINS }}
+          caller-pins: ${{ inputs.package-pins }}
+          pins-file: ${{ inputs.pins-file }}
+          auto-pin-siblings: ${{ inputs.auto-pin-siblings }}
+          sibling-repos: ${{ inputs.sibling-repos }}
+          allowed-orgs: ${{ inputs.pin-allowed-orgs }}
+          label-pins-json: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          inputs-json: ${{ inputs.pin-inputs-json }}
+
       - name: ⚡ Install UV
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
+          cache-suffix: pins-${{ steps.pins.outputs.digest }}
+
+      # Patch the pins into [tool.uv] override-dependencies. uv honours overrides
+      # only from pyproject.toml, so the file has to be rewritten on disk.
+      - name: 📌 Apply branch pins
+        uses: ./.ci-tooling/actions/apply-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
 
       - name: 📦 Install dependencies
         if: ${{ !inputs.use-wrknv }}
@@ -272,11 +354,36 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # Work out which packages this run pins. Runs before uv exists because the
+      # digest it emits becomes uv's cache suffix: a pinned run must not share a
+      # cache entry with an unpinned one.
+      - name: 📌 Resolve branch pins
+        id: pins
+        uses: ./.ci-tooling/actions/resolve-pins
+        with:
+          dispatch-pins: ${{ inputs.dispatch-pins }}
+          variable-pins: ${{ vars.CI_PINS }}
+          caller-pins: ${{ inputs.package-pins }}
+          pins-file: ${{ inputs.pins-file }}
+          auto-pin-siblings: ${{ inputs.auto-pin-siblings }}
+          sibling-repos: ${{ inputs.sibling-repos }}
+          allowed-orgs: ${{ inputs.pin-allowed-orgs }}
+          label-pins-json: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          inputs-json: ${{ inputs.pin-inputs-json }}
+
       - name: ⚡ Install UV
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
+          cache-suffix: pins-${{ steps.pins.outputs.digest }}
+
+      # Patch the pins into [tool.uv] override-dependencies. uv honours overrides
+      # only from pyproject.toml, so the file has to be rewritten on disk.
+      - name: 📌 Apply branch pins
+        uses: ./.ci-tooling/actions/apply-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
 
       - name: 📦 Install dependencies
         if: ${{ !inputs.use-wrknv }}
@@ -329,11 +436,36 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # Work out which packages this run pins. Runs before uv exists because the
+      # digest it emits becomes uv's cache suffix: a pinned run must not share a
+      # cache entry with an unpinned one.
+      - name: 📌 Resolve branch pins
+        id: pins
+        uses: ./.ci-tooling/actions/resolve-pins
+        with:
+          dispatch-pins: ${{ inputs.dispatch-pins }}
+          variable-pins: ${{ vars.CI_PINS }}
+          caller-pins: ${{ inputs.package-pins }}
+          pins-file: ${{ inputs.pins-file }}
+          auto-pin-siblings: ${{ inputs.auto-pin-siblings }}
+          sibling-repos: ${{ inputs.sibling-repos }}
+          allowed-orgs: ${{ inputs.pin-allowed-orgs }}
+          label-pins-json: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          inputs-json: ${{ inputs.pin-inputs-json }}
+
       - name: ⚡ Install UV
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
+          cache-suffix: pins-${{ steps.pins.outputs.digest }}
+
+      # Patch the pins into [tool.uv] override-dependencies. uv honours overrides
+      # only from pyproject.toml, so the file has to be rewritten on disk.
+      - name: 📌 Apply branch pins
+        uses: ./.ci-tooling/actions/apply-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
 
       - name: 📦 Install dependencies
         if: ${{ !inputs.use-wrknv }}
@@ -386,11 +518,36 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # Work out which packages this run pins. Runs before uv exists because the
+      # digest it emits becomes uv's cache suffix: a pinned run must not share a
+      # cache entry with an unpinned one.
+      - name: 📌 Resolve branch pins
+        id: pins
+        uses: ./.ci-tooling/actions/resolve-pins
+        with:
+          dispatch-pins: ${{ inputs.dispatch-pins }}
+          variable-pins: ${{ vars.CI_PINS }}
+          caller-pins: ${{ inputs.package-pins }}
+          pins-file: ${{ inputs.pins-file }}
+          auto-pin-siblings: ${{ inputs.auto-pin-siblings }}
+          sibling-repos: ${{ inputs.sibling-repos }}
+          allowed-orgs: ${{ inputs.pin-allowed-orgs }}
+          label-pins-json: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          inputs-json: ${{ inputs.pin-inputs-json }}
+
       - name: ⚡ Install UV
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
+          cache-suffix: pins-${{ steps.pins.outputs.digest }}
+
+      # Patch the pins into [tool.uv] override-dependencies. uv honours overrides
+      # only from pyproject.toml, so the file has to be rewritten on disk.
+      - name: 📌 Apply branch pins
+        uses: ./.ci-tooling/actions/apply-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
 
       - name: 📦 Install dependencies
         if: ${{ !inputs.use-wrknv }}
@@ -444,11 +601,36 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # Work out which packages this run pins. Runs before uv exists because the
+      # digest it emits becomes uv's cache suffix: a pinned run must not share a
+      # cache entry with an unpinned one.
+      - name: 📌 Resolve branch pins
+        id: pins
+        uses: ./.ci-tooling/actions/resolve-pins
+        with:
+          dispatch-pins: ${{ inputs.dispatch-pins }}
+          variable-pins: ${{ vars.CI_PINS }}
+          caller-pins: ${{ inputs.package-pins }}
+          pins-file: ${{ inputs.pins-file }}
+          auto-pin-siblings: ${{ inputs.auto-pin-siblings }}
+          sibling-repos: ${{ inputs.sibling-repos }}
+          allowed-orgs: ${{ inputs.pin-allowed-orgs }}
+          label-pins-json: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          inputs-json: ${{ inputs.pin-inputs-json }}
+
       - name: ⚡ Install UV
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
+          cache-suffix: pins-${{ steps.pins.outputs.digest }}
+
+      # Patch the pins into [tool.uv] override-dependencies. uv honours overrides
+      # only from pyproject.toml, so the file has to be rewritten on disk.
+      - name: 📌 Apply branch pins
+        uses: ./.ci-tooling/actions/apply-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
 
       - name: 📦 Install dependencies
         run: uv sync --group dev ${{ inputs.no-sources && '--no-sources' || '' }}
@@ -491,11 +673,36 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # Work out which packages this run pins. Runs before uv exists because the
+      # digest it emits becomes uv's cache suffix: a pinned run must not share a
+      # cache entry with an unpinned one.
+      - name: 📌 Resolve branch pins
+        id: pins
+        uses: ./.ci-tooling/actions/resolve-pins
+        with:
+          dispatch-pins: ${{ inputs.dispatch-pins }}
+          variable-pins: ${{ vars.CI_PINS }}
+          caller-pins: ${{ inputs.package-pins }}
+          pins-file: ${{ inputs.pins-file }}
+          auto-pin-siblings: ${{ inputs.auto-pin-siblings }}
+          sibling-repos: ${{ inputs.sibling-repos }}
+          allowed-orgs: ${{ inputs.pin-allowed-orgs }}
+          label-pins-json: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          inputs-json: ${{ inputs.pin-inputs-json }}
+
       - name: ⚡ Install UV
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
+          cache-suffix: pins-${{ steps.pins.outputs.digest }}
+
+      # Patch the pins into [tool.uv] override-dependencies. uv honours overrides
+      # only from pyproject.toml, so the file has to be rewritten on disk.
+      - name: 📌 Apply branch pins
+        uses: ./.ci-tooling/actions/apply-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
 
       - name: 📦 Install dependencies
         run: uv sync --group dev ${{ inputs.no-sources && '--no-sources' || '' }}
@@ -537,11 +744,36 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
 
+      # Work out which packages this run pins. Runs before uv exists because the
+      # digest it emits becomes uv's cache suffix: a pinned run must not share a
+      # cache entry with an unpinned one.
+      - name: 📌 Resolve branch pins
+        id: pins
+        uses: ./.ci-tooling/actions/resolve-pins
+        with:
+          dispatch-pins: ${{ inputs.dispatch-pins }}
+          variable-pins: ${{ vars.CI_PINS }}
+          caller-pins: ${{ inputs.package-pins }}
+          pins-file: ${{ inputs.pins-file }}
+          auto-pin-siblings: ${{ inputs.auto-pin-siblings }}
+          sibling-repos: ${{ inputs.sibling-repos }}
+          allowed-orgs: ${{ inputs.pin-allowed-orgs }}
+          label-pins-json: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          inputs-json: ${{ inputs.pin-inputs-json }}
+
       - name: ⚡ Install UV
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
         with:
           version: ${{ inputs.uv-version }}
           enable-cache: true
+          cache-suffix: pins-${{ steps.pins.outputs.digest }}
+
+      # Patch the pins into [tool.uv] override-dependencies. uv honours overrides
+      # only from pyproject.toml, so the file has to be rewritten on disk.
+      - name: 📌 Apply branch pins
+        uses: ./.ci-tooling/actions/apply-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
 
       - name: 📦 Install dependencies
         if: ${{ !inputs.use-wrknv }}
@@ -645,9 +877,35 @@ jobs:
   # ==================================================================================
   # 📋 CI Summary
   # ==================================================================================
+  # ==================================================================================
+  # 📌 Branch Pin Guard
+  # ==================================================================================
+  pin-guard:
+    name: 📌 Pin Guard
+    # A pin that survives a merge silently keeps the default branch on someone's
+    # feature work, so cleanup is enforced here rather than remembered.
+    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: provide-io/ci-tooling
+          ref: ${{ github.job_workflow_sha || 'v0' }}
+          path: .ci-tooling
+
+      # Fails the run if the pins file still declares anything.
+      - name: 📌 Check no pins survive on the default branch
+        env:
+          PINS_FILE: ${{ inputs.pins-file }}
+        run: python3 .ci-tooling/scripts/deps/check_no_pins.py --pins-file "$PINS_FILE"
+
   summary:
     name: 📋 CI Summary
-    needs: [quality, test, test-linux-arm, test-macos-arm, test-macos-intel, test-windows, test-windows-arm, security, secret-scan, build]
+    needs: [quality, test, test-linux-arm, test-macos-arm, test-macos-intel, test-windows, test-windows-arm, security, secret-scan, build, pin-guard]
     if: always()
     runs-on: ubuntu-24.04
     steps:

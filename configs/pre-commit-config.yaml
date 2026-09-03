@@ -29,6 +29,19 @@ repos:
         description: Validates ruff/mypy/pytest configs match canonical standards
 
   # ============================================================================
+  # Branch Pins - refuse to commit a pinned working tree
+  # ============================================================================
+  - repo: local
+    hooks:
+      - id: guard-applied-pins
+        name: No branch pins applied
+        description: Blocks a commit while .ci/.pins-applied.json exists
+        entry: .ci-tooling/scripts/deps/guard-applied-pins.sh
+        language: script
+        pass_filenames: false
+        files: ^(pyproject\.toml|uv\.lock)$
+
+  # ============================================================================
   # Ruff - Fast Python Linter & Formatter
   # ============================================================================
   - repo: https://github.com/astral-sh/ruff-pre-commit

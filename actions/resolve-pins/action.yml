@@ -1,0 +1,97 @@
+name: 'Resolve Branch Pins'
+description: 'Resolve package pins from every layer before uv is installed, so the cache key can include them'
+author: 'provide.io llc'
+
+# Script policy: no inline scripts beyond three lines. Logic lives in
+# ci-tooling scripts/deps/ so it is testable outside a runner.
+
+inputs:
+  ci-tooling-path:
+    description: 'Path the ci-tooling repository is checked out at. Defaults to this action''s own copy, so the scripts always match the ref the caller pinned'
+    required: false
+    default: ''
+  dispatch-pins:
+    description: 'Pins from a workflow_dispatch input (highest precedence)'
+    required: false
+    default: ''
+  label-pins-json:
+    description: 'JSON array of PR label names; entries prefixed pin: become pins'
+    required: false
+    default: '[]'
+  variable-pins:
+    description: 'Pins from the CI_PINS repository or organization variable'
+    required: false
+    default: ''
+  caller-pins:
+    description: 'Pins supplied by the calling workflow'
+    required: false
+    default: ''
+  pins-file:
+    description: 'Path to the branch-scoped pins file'
+    required: false
+    default: '.ci/pins.toml'
+  auto-pin-siblings:
+    description: 'Pin any sibling repo that has a branch with the same name as this one'
+    required: false
+    default: 'false'
+  sibling-repos:
+    description: 'Comma- or newline-separated sibling repository names to consider for auto-pinning'
+    required: false
+    default: ''
+  allowed-orgs:
+    description: 'Glob patterns a pin URL must match, as host/owner/repo'
+    required: false
+    default: 'github.com/provide-io/*'
+  inputs-json:
+    description: 'JSON object of caller inputs, matched by a pin when.input condition'
+    required: false
+    default: '{}'
+
+outputs:
+  pins:
+    description: 'JSON array of resolved pins'
+    value: ${{ steps.resolve.outputs.pins }}
+  digest:
+    description: 'Short digest of the pin set, for use as a uv cache suffix'
+    value: ${{ steps.resolve.outputs.digest }}
+  count:
+    description: 'Number of pins resolved'
+    value: ${{ steps.resolve.outputs.count }}
+
+runs:
+  using: 'composite'
+  steps:
+    # Ask GitHub which siblings actually have a branch of this name. Skipped
+    # unless auto-pinning is on, so the default path makes no API calls.
+    - name: 🔎 Find sibling branches
+      id: siblings
+      if: inputs.auto-pin-siblings == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        CI_TOOLING_PATH: ${{ inputs.ci-tooling-path != '' && inputs.ci-tooling-path || format('{0}/../..', github.action_path) }}
+        OWNER: ${{ github.repository_owner }}
+        BRANCH: ${{ github.head_ref || github.ref_name }}
+        SIBLINGS: ${{ inputs.sibling-repos }}
+      run: "$CI_TOOLING_PATH/scripts/deps/find-sibling-branches.sh"
+
+    # Collapse every layer into the effective pin set. Stdlib only: uv is not
+    # installed yet, because the digest below feeds its cache suffix.
+    - name: 📌 Resolve pins
+      id: resolve
+      shell: bash
+      env:
+        CI_TOOLING_PATH: ${{ inputs.ci-tooling-path != '' && inputs.ci-tooling-path || format('{0}/../..', github.action_path) }}
+        DISPATCH_PINS: ${{ inputs.dispatch-pins }}
+        VARIABLE_PINS: ${{ inputs.variable-pins }}
+        CALLER_PINS: ${{ inputs.caller-pins }}
+        PINS_FILE: ${{ inputs.pins-file }}
+        AUTO_SIBLINGS: ${{ steps.siblings.outputs.found }}
+        ALLOWED_ORGS: ${{ inputs.allowed-orgs }}
+        LABEL_PINS_JSON: ${{ inputs.label-pins-json }}
+        INPUTS_JSON: ${{ inputs.inputs-json }}
+      run: "$CI_TOOLING_PATH/scripts/deps/resolve-pins.sh"
+
+branding:
+  icon: 'anchor'
+  color: 'blue'

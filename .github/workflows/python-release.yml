@@ -57,6 +57,27 @@ jobs:
   # ==================================================================================
   # 🧪 Pre-release Tests
   # ==================================================================================
+  # A release must never be cut from a tree that still pins a dependency to a
+  # branch. Overrides do not reach the published wheel's metadata, but the tests
+  # that gate the release would have run against unreleased code.
+  pin-guard:
+    name: 📌 Pin Guard
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: provide-io/ci-tooling
+          ref: ${{ github.job_workflow_sha || 'v0' }}
+          path: .ci-tooling
+
+      # Fails the release if any branch pin is still declared.
+      - name: 📌 Check no pins are active
+        run: python3 .ci-tooling/scripts/deps/check_no_pins.py
+
   pre-release-tests:
     name: 🧪 Pre-release Tests
     if: inputs.run-tests
@@ -91,8 +112,8 @@ jobs:
   # ==================================================================================
   build:
     name: 🏗️ Build Package
-    needs: [pre-release-tests]
-    if: always() && (needs.pre-release-tests.result == 'success' || !inputs.run-tests)
+    needs: [pre-release-tests, pin-guard]
+    if: always() && needs.pin-guard.result == 'success' && (needs.pre-release-tests.result == 'success' || !inputs.run-tests)
     runs-on: ubuntu-24.04
     steps:
       # Full clone needed for version extraction from tags

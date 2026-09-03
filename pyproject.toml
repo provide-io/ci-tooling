@@ -18,6 +18,10 @@ dev = [
 
 # This pyproject.toml is kept for tool configurations used by the examples/tests.
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["scripts/deps"]
+
 [tool.ruff]
 line-length = 111
 indent-width = 4

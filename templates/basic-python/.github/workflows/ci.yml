@@ -11,7 +11,16 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  # Re-run CI against an unreleased sibling branch without committing anything.
+  # This is the highest-precedence pin layer; see docs/branch-pins.md for the
+  # other five.
   workflow_dispatch:
+    inputs:
+      package-pins:
+        description: 'Branch pins for this run, as <pkg>@<ref> (comma or newline separated)'
+        type: string
+        required: false
+        default: ''
 
 # security-events: write is what lets the security scan upload SARIF to the
 # repository's code-scanning alerts. Drop it along with run-security if you
@@ -36,4 +45,6 @@ jobs:
       coverage-threshold: 80
       run-security: true
       run-secret-scan: true
+      # Empty on push and pull_request; set only by a manual dispatch.
+      dispatch-pins: ${{ inputs.package-pins || '' }}
     secrets: inherit
