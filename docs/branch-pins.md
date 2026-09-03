@@ -49,7 +49,8 @@ packages but never redefine one already pinned.
 
 **A PR label, by default.** It costs no commit, cannot outlive the pull request,
 and cannot leak to another branch. Setting one needs write access, so it is a
-safe layer even on a public repository.
+safe layer even on a public repository. Two prerequisites, both easy to miss —
+see *Making labels work* below.
 
 **A `workflow_dispatch` input** when you want to re-run without touching the PR
 at all. It needs one-time scaffolding in the calling workflow — a
@@ -77,6 +78,42 @@ unset it deliberately.
 on state outside the commit — a branch appearing or being deleted elsewhere
 changes what this repository installs — and two unrelated repositories can share
 a branch name by coincidence.
+
+## Making labels work
+
+Two things the label layer needs, neither of them obvious.
+
+### The workflow has to listen for `labeled`
+
+`pull_request:` with no `types:` listens for `opened`, `synchronize` and
+`reopened` only. Adding a label is none of those, so a label added to an open
+pull request starts no run — and re-running an existing one replays the original
+event payload, which had no label on it.
+
+```yaml
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+```
+
+Without that, the label is inert until the next push. Closing and reopening the
+pull request also works, since `reopened` is in the default set.
+
+### Label names are capped at 50 characters
+
+GitHub rejects anything longer. The prefix eats most of the budget:
+
+```
+pin:livingstaccato/python-hcl2@       31 characters
+                                      19 left for the ref
+```
+
+So a fork pin leaves room for a short branch name and no more —
+`int/pyvider-hcl-9` fits, `integration/pyvider-hcl-drop-workarounds` does not.
+Name ephemeral integration branches with that budget in mind, or use a
+`workflow_dispatch` input or `CI_PINS` for the long ones, neither of which has a
+length limit.
 
 ## Short form
 
@@ -184,6 +221,18 @@ layer does.
 we run deps.pin      # apply .ci/pins.toml to pyproject.toml
 we run deps.unpin    # restore it
 ```
+
+### It does not survive pre-commit
+
+pre-commit stashes unstaged changes before running hooks, and an applied pin is
+an unstaged change to `pyproject.toml`. So the pin is gone by the time a hook
+runs. A hook that resolves dependencies — `entry: uv run mypy src/`, say — will
+re-sync from the stashed file and uninstall the pinned package outright.
+
+There is no layer that fixes this today. If a repository's pre-commit gate
+typechecks against a dependency that is only correct on a branch, that gate
+cannot pass until the dependency is published, or the override is committed to
+`pyproject.toml` directly. Worth knowing before you plan a branch around it.
 
 Without wrknv:
 

@@ -11,6 +11,27 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Documented three things about the label layer that a real pull request
+  found.** All three were wrong or missing in the 0.7.0 guide.
+  - `pull_request:` with no `types:` listens for `opened`, `synchronize` and
+    `reopened` only, so a label added to an open PR starts no run — and
+    re-running replays the original payload, which had no label on it. The
+    guide now says to add `types: [..., labeled, unlabeled]`, and
+    `templates/basic-python` ships it. Closing and reopening also works, since
+    `reopened` is in the default set.
+  - GitHub caps label names at 50 characters. `pin:<owner>/<repo>@` eats most of
+    the budget — 31 of the 50 for `pin:livingstaccato/python-hcl2@` — so a fork
+    pin leaves room for a short ref and no more. Documented with the
+    arithmetic, and with the suggestion to use a `workflow_dispatch` input or
+    `CI_PINS` for longer ones.
+  - pre-commit stashes unstaged changes, and an applied pin is an unstaged
+    change to `pyproject.toml`, so the pin is gone before any hook runs. A hook
+    that resolves dependencies (`entry: uv run mypy src/`) re-syncs from the
+    stashed file and uninstalls the pinned package. No layer fixes this today;
+    the guide says so rather than leaving it to be discovered.
+
 ## [0.7.0] - 2026-09-03
 
 Branch pins, corrected by use. Everything here came out of pinning a real

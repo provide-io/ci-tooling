@@ -11,6 +11,10 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+    # labeled/unlabeled are not in the default set, and without them a
+    # `pin:<pkg>@<ref>` label cannot take effect: adding one starts no run, and
+    # re-running replays the original payload, which had no label on it.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   # Re-run CI against an unreleased sibling branch without committing anything.
   # This is the highest-precedence pin layer; see docs/branch-pins.md for the
   # other five.
