@@ -11,6 +11,11 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-09-03
+
+Documentation only. Three things the label layer needs that the 0.7.0 guide did
+not say, found by running it on a real pull request rather than describing it.
+
 ### Fixed
 
 - **Documented three things about the label layer that a real pull request
