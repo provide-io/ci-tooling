@@ -11,6 +11,55 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-03
+
+A feature release, and the first cut of the moving `v0` tag since 2026-08-20.
+`v0` pointed at `194e51a`, which predates `v0.4.3`, so callers pinned to the
+tag never received 0.4.3 either: everything below reaches them at once.
+
+### Added
+
+- **`python-ci` matrix testing covers Python 3.14.** The list was hardcoded as
+  `["3.11", "3.12", "3.13"]` in each of the six platform jobs, and
+  `matrix-testing` is a boolean, so a caller whose classifiers claimed 3.14 had
+  no way to test it. Only affects callers setting `matrix-testing: true`.
+
+### Fixed
+
+- **A commit-SHA pin now covers `scripts/`, not just the workflow file.**
+  `python-ci` checked its own scripts out at a hardcoded `ref: v0` in all eight
+  platform jobs, so a caller pinning a SHA got immutable orchestration and
+  whatever the moving tag pointed at that day. It now uses
+  `${{ github.job_workflow_sha }}`, the commit the reusable workflow is itself
+  running from, which resolves to whatever the caller pinned. Callers on `@v0`
+  are unaffected. This matters because a reusable workflow runs with the
+  calling repository's token, which is the reason a caller pins a SHA at all.
+- `scripts/`: bound `urlopen`'s `read()` to a typed name, which mypy could not
+  otherwise follow.
+
+### Changed
+
+- The `basic-python` template now pins `@v0` for both CI and release, rather
+  than `@v0.4.2`; it also carries the release repair path, the SBOM
+  root-component fix, and the rest of what the repositories actually run. Two
+  unused Jinja templates are gone.
+- The release workflow no longer hands a writable token to the jobs that run
+  PyPI code.
+- `sigstore` pinned at v3.5.0; `astral-sh/setup-uv` bumped 9.0.0 to 10.0.1;
+  dependabot no longer offers `gitleaks-action` v3.
+- `test-actions` builds its fixtures from scripts rather than inline workflow
+  YAML.
+
+### Documentation
+
+- Every example and scaffold pinned `@v0.0.1`, a tag that carries no
+  `python-ci.yml` at all -- it predates the file -- so anyone following
+  quick-start wrote a `uses:` that cannot resolve. All 43 references across
+  `docs/` and `AGENTS.md` now say `@v0`.
+- The version-pinning section described a commit SHA as an acceptable
+  alternative to a tag. That was not true while `ref: v0` was hardcoded, and is
+  true again now; the section says what each pin style actually covers.
+
 ## [0.4.3] - 2026-08-25
 
 Versioned as a patch, but it is a minor release: it adds four `python-ci`
