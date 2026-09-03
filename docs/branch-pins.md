@@ -97,8 +97,23 @@ mostly exist for:
 livingstaccato/python-hcl2@fix/heredoc-line-end
 ```
 
-Either way the distribution name is taken to match the repository name. A pin
-where those differ needs the long form below.
+When the distribution name differs from the repository name, say so with
+`<dist>=<owner>/<repo>@<ref>`:
+
+```
+fire=google/python-fire@main
+```
+
+This matters more than it looks. The name uv keys an override on is the
+*distribution* name — what `Requires-Dist` says — and it is not always the
+repository name, nor the import name: `provide-foundation` imports as `provide`,
+`python-hcl2` imports as `hcl2`. Get it wrong and uv accepts the override for a
+package nothing depends on and silently does nothing, so the run goes green
+against an unpinned dependency.
+
+CI catches that: after `uv sync`, every pin is checked against the lockfile and
+the job fails if one did not take effect. The same check catches a typo and a
+package that simply is not a dependency.
 
 ## Long form with conditions
 

@@ -199,6 +199,14 @@ jobs:
         if: inputs.use-wrknv
         run: uv pip install --python .venv/bin/python "wrknv @ git+https://github.com/provide-io/wrknv.git@main"
 
+      # uv silently ignores an override for a package nothing depends on, so a
+      # mistyped or misnamed pin would otherwise produce a green run against
+      # unpinned code. This reads the lockfile and insists the pin is in it.
+      - name: 📌 Verify branch pins took effect
+        uses: ./.ci-tooling/actions/verify-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
+
       - name: 🎨 Check formatting with Ruff
         if: ${{ !inputs.use-wrknv }}
         run: |
@@ -305,6 +313,14 @@ jobs:
         if: inputs.use-wrknv
         run: uv pip install --python .venv/bin/python "wrknv @ git+https://github.com/provide-io/wrknv.git@main"
 
+      # uv silently ignores an override for a package nothing depends on, so a
+      # mistyped or misnamed pin would otherwise produce a green run against
+      # unpinned code. This reads the lockfile and insists the pin is in it.
+      - name: 📌 Verify branch pins took effect
+        uses: ./.ci-tooling/actions/verify-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
+
       - name: 🧪 Run Tests
         if: ${{ !inputs.use-wrknv }}
         run: |
@@ -397,6 +413,14 @@ jobs:
         if: inputs.use-wrknv
         run: uv pip install --python .venv/bin/python "wrknv @ git+https://github.com/provide-io/wrknv.git@main"
 
+      # uv silently ignores an override for a package nothing depends on, so a
+      # mistyped or misnamed pin would otherwise produce a green run against
+      # unpinned code. This reads the lockfile and insists the pin is in it.
+      - name: 📌 Verify branch pins took effect
+        uses: ./.ci-tooling/actions/verify-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
+
       - name: 🧪 Run Tests
         if: ${{ !inputs.use-wrknv }}
         run: |
@@ -478,6 +502,14 @@ jobs:
       - name: 🔧 Install wrknv
         if: inputs.use-wrknv
         run: uv pip install --python .venv/bin/python "wrknv @ git+https://github.com/provide-io/wrknv.git@main"
+
+      # uv silently ignores an override for a package nothing depends on, so a
+      # mistyped or misnamed pin would otherwise produce a green run against
+      # unpinned code. This reads the lockfile and insists the pin is in it.
+      - name: 📌 Verify branch pins took effect
+        uses: ./.ci-tooling/actions/verify-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
 
       - name: 🧪 Run Tests
         if: ${{ !inputs.use-wrknv }}
@@ -561,6 +593,14 @@ jobs:
         if: inputs.use-wrknv
         run: uv pip install --python .venv/bin/python "wrknv @ git+https://github.com/provide-io/wrknv.git@main"
 
+      # uv silently ignores an override for a package nothing depends on, so a
+      # mistyped or misnamed pin would otherwise produce a green run against
+      # unpinned code. This reads the lockfile and insists the pin is in it.
+      - name: 📌 Verify branch pins took effect
+        uses: ./.ci-tooling/actions/verify-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
+
       - name: 🧪 Run Tests
         if: ${{ !inputs.use-wrknv }}
         run: |
@@ -635,6 +675,14 @@ jobs:
       - name: 📦 Install dependencies
         run: uv sync --group dev ${{ inputs.no-sources && '--no-sources' || '' }}
 
+      # uv silently ignores an override for a package nothing depends on, so a
+      # mistyped or misnamed pin would otherwise produce a green run against
+      # unpinned code. This reads the lockfile and insists the pin is in it.
+      - name: 📌 Verify branch pins took effect
+        uses: ./.ci-tooling/actions/verify-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
+
       - name: 🧪 Run Tests
         shell: pwsh
         run: |
@@ -706,6 +754,14 @@ jobs:
 
       - name: 📦 Install dependencies
         run: uv sync --group dev ${{ inputs.no-sources && '--no-sources' || '' }}
+
+      # uv silently ignores an override for a package nothing depends on, so a
+      # mistyped or misnamed pin would otherwise produce a green run against
+      # unpinned code. This reads the lockfile and insists the pin is in it.
+      - name: 📌 Verify branch pins took effect
+        uses: ./.ci-tooling/actions/verify-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
 
       - name: 🧪 Run Tests
         shell: pwsh
@@ -791,6 +847,14 @@ jobs:
         run: |
           uv pip install --python .venv/bin/python "wrknv @ git+https://github.com/provide-io/wrknv.git@main"
           uv pip install --python .venv/bin/python pip-audit
+
+      # uv silently ignores an override for a package nothing depends on, so a
+      # mistyped or misnamed pin would otherwise produce a green run against
+      # unpinned code. This reads the lockfile and insists the pin is in it.
+      - name: 📌 Verify branch pins took effect
+        uses: ./.ci-tooling/actions/verify-pins
+        with:
+          pins: ${{ steps.pins.outputs.pins }}
 
       - name: 🔒 Run Bandit security scan
         if: ${{ !inputs.use-wrknv }}

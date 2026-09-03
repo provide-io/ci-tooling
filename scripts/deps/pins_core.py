@@ -62,12 +62,18 @@ class Layers:
 
 
 def _parse_short_form(text: str, layer: str, ctx: Context) -> list[Pin]:
-    """Expand `pkg@ref` or `owner/pkg@ref` entries into pins.
+    """Expand short-form entries into pins.
 
-    Without an owner the repository's own org is assumed, which covers sibling
-    repositories. An explicit owner is what reaches a fork living somewhere else.
-    Either way the distribution name is taken to match the repository name; a pin
-    where those differ needs the long form in `.ci/pins.toml`.
+    Three shapes, each adding one piece of information:
+
+        pkg@ref                    sibling in this repository's own org
+        owner/repo@ref             a fork living somewhere else
+        dist=owner/repo@ref        distribution name differs from the repo name
+
+    The distribution name is what uv keys an override on, and it is not always
+    the repository name -- `google/python-fire` ships `fire`. Getting it wrong is
+    silent, because uv accepts an override for a package nothing depends on and
+    does nothing with it, so the third shape exists to say it outright.
     """
     default_org = ctx.repo.split("/")[0]
     pins = []
@@ -75,12 +81,13 @@ def _parse_short_form(text: str, layer: str, ctx: Context) -> list[Pin]:
         item = entry.strip()
         if not item:
             continue
-        spec, _, ref = item.partition("@")
-        owner, _, package = spec.strip().rpartition("/")
+        named, sep, remainder = item.partition("=")
+        spec, _, ref = (remainder if sep else item).partition("@")
+        owner, _, repo = spec.strip().rpartition("/")
         pins.append(
             Pin(
-                package=package,
-                url=f"git+https://github.com/{owner or default_org}/{package}@{ref.strip()}",
+                package=named.strip() if sep else repo,
+                url=f"git+https://github.com/{owner or default_org}/{repo}@{ref.strip()}",
                 layer=layer,
             )
         )

@@ -296,3 +296,19 @@ def test_the_default_allowlist_covers_the_suite_and_the_forks() -> None:
     )
 
     assert [pin.package for pin in pins] == ["provide-foundation", "python-hcl2"]
+
+
+def test_short_form_takes_an_explicit_distribution_name() -> None:
+    pins = resolve_pins(
+        Layers(caller_input="fire=google/python-fire@main"),
+        ctx(),
+        allowed_orgs=("github.com/google/*",),
+    )
+
+    assert pins == [
+        Pin(
+            package="fire",
+            url="git+https://github.com/google/python-fire@main",
+            layer="caller-input",
+        )
+    ]

@@ -11,6 +11,21 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+### Added
+
+- **Pins are verified against the lockfile after the sync.** uv accepts an
+  override for a package nothing depends on and silently does nothing with it —
+  `uv lock` exits 0 and the dependency stays on the registry. So a pin naming a
+  distribution that does not exist in the graph produced a green run against
+  unpinned code, with the step summary reporting the pin as applied. Every job
+  now reads `uv.lock` after installing and fails if a pin is not in it. Catches
+  three cases at once: a typo, a package that is not really a dependency, and a
+  repository whose name differs from the distribution it ships.
+
+- **`<dist>=<owner>/<repo>@<ref>` in the short form**, for when those differ —
+  `google/python-fire` ships `fire`. Without an `=` the distribution name is
+  still inferred from the repository name.
+
 ### Changed
 
 - **The branch-pins guide leads with the PR label and demotes `.ci/pins.toml`.**

@@ -1,0 +1,39 @@
+name: 'Verify Branch Pins'
+description: 'Fail when a resolved pin did not actually take effect in the lockfile'
+author: 'provide.io llc'
+
+# Script policy: no inline scripts beyond three lines. Logic lives in
+# ci-tooling scripts/deps/ so it is testable outside a runner.
+#
+# Runs after `uv sync`. uv accepts an override for a package nothing depends on
+# and silently ignores it, so without this a mistyped or misnamed pin produces a
+# green run against unpinned code.
+
+inputs:
+  ci-tooling-path:
+    description: 'Path the ci-tooling repository is checked out at. Defaults to this action''s own copy'
+    required: false
+    default: ''
+  pins:
+    description: 'JSON array of resolved pins, from the resolve-pins action'
+    required: true
+  lock-file:
+    description: 'Path to the lockfile to inspect'
+    required: false
+    default: 'uv.lock'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 📌 Verify branch pins took effect
+      if: inputs.pins != '[]' && inputs.pins != ''
+      shell: bash
+      env:
+        CI_TOOLING_PATH: ${{ inputs.ci-tooling-path != '' && inputs.ci-tooling-path || format('{0}/../..', github.action_path) }}
+        PINS: ${{ inputs.pins }}
+        PINS_LOCK: ${{ inputs.lock-file }}
+      run: "$CI_TOOLING_PATH/scripts/deps/verify-pins.sh"
+
+branding:
+  icon: 'check-circle'
+  color: 'blue'

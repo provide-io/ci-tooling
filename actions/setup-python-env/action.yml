@@ -143,6 +143,18 @@ runs:
           echo "⚠️ No pyproject.toml or requirements.txt found, skipping dependency installation"
         fi
 
+
+    # uv silently ignores an override for a package nothing depends on, so a
+    # mistyped or misnamed pin would otherwise leave the dependency unpinned with
+    # nothing to show for it. Read the lockfile and insist the pin is in it.
+    - name: 📌 Verify branch pins took effect
+      if: steps.pins.outputs.count != '0'
+      shell: bash
+      env:
+        CI_TOOLING_PATH: ${{ github.action_path }}/../..
+        PINS: ${{ steps.pins.outputs.pins }}
+      run: "$CI_TOOLING_PATH/scripts/deps/verify-pins.sh"
+
     - name: 🔍 Verify installation
       shell: bash
       run: |
