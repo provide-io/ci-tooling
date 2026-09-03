@@ -21,7 +21,7 @@ on:
 
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       python-version: '3.11'
       coverage-threshold: 80
@@ -196,7 +196,7 @@ on: [push, pull_request]
 
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       python-version: '3.11'
 ```

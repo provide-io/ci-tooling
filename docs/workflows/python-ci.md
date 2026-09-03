@@ -22,7 +22,7 @@ on: [push, pull_request]
 
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       python-version: '3.11'
 ```
@@ -35,7 +35,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       python-version: '3.11'
       run-security: true
@@ -46,7 +46,7 @@ jobs:
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       matrix-testing: true
       os-matrix: 'ubuntu-latest,macos-latest,windows-latest'
@@ -148,7 +148,7 @@ permissions:
 
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       python-version: '3.11'
       coverage-threshold: 85
@@ -163,7 +163,7 @@ jobs:
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       matrix-testing: true
       python-version: '3.11'  # Base version, matrix adds 3.12, 3.13
@@ -176,7 +176,7 @@ jobs:
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       source-paths: 'lib/ tests/'
       test-directory: 'spec/'
@@ -187,7 +187,7 @@ jobs:
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       python-version: '3.11'
 
@@ -376,7 +376,7 @@ After:
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
 ```
 
 ## Next Steps

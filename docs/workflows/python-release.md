@@ -28,7 +28,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
     with:
       python-version: '3.11'
     secrets:
@@ -40,7 +40,7 @@ jobs:
 ```yaml
 jobs:
   release:
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
     with:
       python-version: '3.11'
       repository-url: 'https://test.pypi.org/legacy/'
@@ -53,7 +53,7 @@ jobs:
 ```yaml
 jobs:
   release:
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
     with:
       dry-run: true
     secrets:
@@ -158,7 +158,7 @@ permissions:
 
 jobs:
   release:
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
     with:
       python-version: '3.11'
       coverage-threshold: 85
@@ -181,7 +181,7 @@ on:
 
 jobs:
   release:
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
     with:
       python-version: '3.11'
     secrets:
@@ -201,11 +201,11 @@ on:
 jobs:
   ci:
     if: "!startsWith(github.ref, 'refs/tags/v')"
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
     secrets:
       pypi-token: ${{ secrets.PYPI_TOKEN }}
 ```
@@ -222,7 +222,7 @@ on:
 
 jobs:
   release:
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
     with:
       prerelease: true
     secrets:
@@ -234,7 +234,7 @@ jobs:
 ```yaml
 jobs:
   release:
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
     with:
       skip-tests: true  # Use only if tests ran in previous job
     secrets:
@@ -287,7 +287,7 @@ permissions:
 
 jobs:
   release:
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
     # No pypi-token needed!
 ```
 
@@ -314,7 +314,7 @@ permissions:
 jobs:
   release:
     environment: production  # Requires approval
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
 ```
 
 ## Release Notes
@@ -463,7 +463,7 @@ on:
 
 jobs:
   test-release:
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
     with:
       dry-run: true
     secrets:

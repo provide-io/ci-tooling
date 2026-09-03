@@ -22,7 +22,7 @@ Complete CI pipeline with quality, test, security, and performance jobs.
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       python-version: '3.11'
 ```
@@ -38,7 +38,7 @@ Complete release pipeline with testing, building, and PyPI publishing.
 ```yaml
 jobs:
   release:
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
     with:
       python-version: '3.11'
     secrets:
@@ -84,15 +84,27 @@ jobs:
 ### Version Pinning
 
 ```yaml
-# Recommended: Use release tag
-uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+# Recommended: the major-version tag, which moves as v0 is cut
+uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
 
-# Acceptable: Use commit SHA
-uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@abc123def
-
-# Not recommended: Use branch (unstable)
+# Not recommended: a branch, which moves on every push
 uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@main
 ```
+
+**A commit SHA does not pin what you would expect it to.** It fixes the
+workflow file, but the workflow checks its own scripts out at `ref: v0`:
+
+```yaml
+- uses: actions/checkout@...
+  with:
+    repository: provide-io/ci-tooling
+    ref: v0
+    path: .ci-tooling
+```
+
+So a SHA-pinned caller gets immutable orchestration and whatever
+`scripts/` `v0` points at today. Pin `@v0` and take both together, rather
+than a SHA that only half-holds.
 
 ## Common Patterns
 
@@ -109,7 +121,7 @@ on:
 
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       python-version: '3.11'
       coverage-threshold: 80
@@ -128,7 +140,7 @@ on:
 
 jobs:
   release:
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
     with:
       python-version: '3.11'
     secrets:
@@ -140,7 +152,7 @@ jobs:
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       matrix-testing: true
       os-matrix: 'ubuntu-latest,macos-latest,windows-latest'
@@ -159,14 +171,14 @@ on:
 
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       python-version: '3.11'
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: ci
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
     secrets:
       pypi-token: ${{ secrets.PYPI_TOKEN }}
 ```
@@ -182,7 +194,7 @@ permissions:
 
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
 ```
 
 ### Release Permissions
@@ -194,7 +206,7 @@ permissions:
 
 jobs:
   release:
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
 ```
 
 ### Security Scanning Permissions
@@ -206,7 +218,7 @@ permissions:
 
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       run-security: true
 ```
@@ -218,7 +230,7 @@ Reusable workflows can provide outputs:
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       python-version: '3.11'
 
@@ -265,7 +277,7 @@ secrets:
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       python-version: '3.11'
 
@@ -320,7 +332,7 @@ Workflows run jobs in parallel:
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       matrix-testing: true
       fail-fast: true  # Stop on first failure
@@ -334,7 +346,7 @@ jobs:
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       coverage-threshold: 90
 ```
@@ -344,7 +356,7 @@ jobs:
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       run-security: false
 ```
@@ -354,7 +366,7 @@ jobs:
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       source-paths: 'lib/ tests/'
       test-directory: 'spec/'
@@ -405,7 +417,7 @@ After (Workflow):
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
 ```
 
 ### From Custom Workflows
@@ -425,7 +437,7 @@ After (Reusable):
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
 ```
 
 ## Next Steps

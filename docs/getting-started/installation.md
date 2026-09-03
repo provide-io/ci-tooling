@@ -91,7 +91,7 @@ Reference workflows directly from your workflow files:
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
 ```
 
 ## Verification

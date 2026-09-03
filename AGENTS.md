@@ -45,7 +45,7 @@ Reusable workflow files:
 ```yaml
 jobs:
   ci:
-    uses: provide-io/ci-tooling/workflows/python-ci.yml@v0.0.1
+    uses: provide-io/ci-tooling/workflows/python-ci.yml@v0
     with:
       python-version: '3.11'
       matrix-testing: true

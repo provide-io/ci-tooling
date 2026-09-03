@@ -33,7 +33,7 @@ jobs:
   # stronger guarantee, since a tag can be moved and a reusable workflow runs
   # with this repository's token.
   release:
-    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0.4.2
+    uses: provide-io/ci-tooling/.github/workflows/python-release.yml@v0
     # Skipped for a repair dispatch: that path attaches the artifacts PyPI
     # already holds, so building a fresh set here would only be discarded.
     if: github.event_name == 'release' || inputs.release_tag == ''
