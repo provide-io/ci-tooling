@@ -1,15 +1,20 @@
 # Branch Pins
 
 Force a package to resolve from a git ref instead of the registry, so a pull
-request in one repository can build against unreleased work in a sibling.
+request in one repository can build against unreleased work in a sibling — or in
+a fork.
 
-```yaml
-jobs:
-  ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
-    with:
-      package-pins: 'provide-foundation@feat/new-telemetry'
+Most of the time, reach for a label:
+
+```bash
+gh pr edit 12 --add-label 'pin:provide-foundation@feat/new-telemetry'
+gh pr edit 12 --add-label 'pin:livingstaccato/python-hcl2@fix/heredoc-line-end'
 ```
+
+Nothing to commit, nothing to remember to delete. The pin is scoped to the pull
+request and disappears when it closes. Re-pinning is editing a label, which
+matters more than it sounds: finding the right ref usually takes two or three
+tries.
 
 ## How it works
 
@@ -40,12 +45,38 @@ packages but never redefine one already pinned.
 | 5 | `package-pins` workflow input | yes | this repo | edit the calling workflow |
 | 6 | auto sibling-branch match | no | this branch | `auto-pin-siblings: true` |
 
-Layer 1 needs one-time scaffolding in the calling workflow — a
-`workflow_dispatch` trigger with a `package-pins` input, passed through to
-`python-ci.yml`. After that, pinning never touches a file again.
+### Which one to use
 
-`.ci/pins.toml` remains the recommended default: it is the only layer that is
-reproducible on a laptop, visible in review, and covered by the merge guard.
+**A PR label, by default.** It costs no commit, cannot outlive the pull request,
+and cannot leak to another branch. Setting one needs write access, so it is a
+safe layer even on a public repository.
+
+**A `workflow_dispatch` input** when you want to re-run without touching the PR
+at all. It needs one-time scaffolding in the calling workflow — a
+`workflow_dispatch` trigger with a `package-pins` input, passed through to
+`python-ci.yml`.
+
+**`.ci/pins.toml`** when one of these actually applies:
+
+- the branch is long-lived and several people check it out, and they should get
+  the same dependency without being told
+- you want the pin reproducible locally, via `we run deps.pin`
+- a reviewer should see the dependency in the diff
+- the pin needs `when` conditions, which no other layer carries
+
+It is a commit you have to remember to delete, which is why the merge guard, the
+release block and the pre-commit hook all exist. Worth it when the list above
+applies; noise on a solo iteration loop.
+
+**`CI_PINS`, carefully.** The variable is repository-*wide* and persistent: set
+it for one branch and every other branch picks it up too, `main` included. Use it
+only when the pin genuinely applies to the whole repository for a while, and
+unset it deliberately.
+
+**`auto-pin-siblings`** is opt-in and stays that way. It makes the build depend
+on state outside the commit — a branch appearing or being deleted elsewhere
+changes what this repository installs — and two unrelated repositories can share
+a branch name by coincidence.
 
 ## Short form
 
@@ -98,9 +129,7 @@ with:
 ```
 
 Any listed repository that has a branch of the same name as the current head ref
-is pinned to it. Off by default, and deliberately so: it makes the build depend
-on state outside the commit, and two unrelated repositories can share a branch
-name by coincidence.
+is pinned to it. See *Which one to use* above for why this stays opt-in.
 
 ## Security
 
@@ -131,6 +160,10 @@ work. Three guards:
   restores `pyproject.toml` but does not re-lock, so run `uv lock` afterwards.
 
 ## Locally
+
+Local application reads `.ci/pins.toml` — a label lives on the pull request and
+is not visible to your laptop. This is the one thing the file buys that no other
+layer does.
 
 ```bash
 we run deps.pin      # apply .ci/pins.toml to pyproject.toml

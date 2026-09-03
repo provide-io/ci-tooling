@@ -11,6 +11,18 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+### Changed
+
+- **The branch-pins guide leads with the PR label and demotes `.ci/pins.toml`.**
+  The file was described as the recommended default, which was wrong for the
+  common case: it is a commit you have to remember to delete — the merge guard,
+  the release block and the pre-commit hook all exist to compensate for it — and
+  re-pinning costs a commit each time, when finding the right ref usually takes
+  two or three tries. The guide now says to use a label unless the branch is
+  long-lived, the pin needs to be reproducible locally, a reviewer should see it
+  in the diff, or it needs `when` conditions. It also spells out that `CI_PINS`
+  is repository-wide, so setting it for one branch leaks the pin to `main`.
+
 ### Added
 
 - **The short form can name another owner: `<owner>/<package>@<ref>`.** It only
