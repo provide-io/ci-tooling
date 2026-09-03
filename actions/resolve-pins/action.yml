@@ -41,7 +41,7 @@ inputs:
   allowed-orgs:
     description: 'Glob patterns a pin URL must match, as host/owner/repo'
     required: false
-    default: 'github.com/provide-io/*'
+    default: 'github.com/provide-io/*,github.com/livingstaccato/*'
   inputs-json:
     description: 'JSON object of caller inputs, matched by a pin when.input condition'
     required: false

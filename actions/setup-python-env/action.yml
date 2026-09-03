@@ -38,7 +38,7 @@ inputs:
   pin-allowed-orgs:
     description: 'Glob patterns, as host/owner/repo, that a pin URL must match'
     required: false
-    default: 'github.com/provide-io/*'
+    default: 'github.com/provide-io/*,github.com/livingstaccato/*'
 
 outputs:
   python-version:

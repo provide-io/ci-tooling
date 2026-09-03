@@ -17,7 +17,15 @@ import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-from pins_core import Context, Layers, Pin, PinNotAllowedError, pins_digest, resolve_pins
+from pins_core import (
+    DEFAULT_ALLOWED_ORGS,
+    Context,
+    Layers,
+    Pin,
+    PinNotAllowedError,
+    pins_digest,
+    resolve_pins,
+)
 
 
 def _split(value: str) -> tuple[str, ...]:
@@ -32,7 +40,7 @@ def _parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument("--caller-input", default="")
     parser.add_argument("--pins-file", default=".ci/pins.toml")
     parser.add_argument("--auto-siblings", default="")
-    parser.add_argument("--allowed-orgs", default="github.com/provide-io/*")
+    parser.add_argument("--allowed-orgs", default=",".join(DEFAULT_ALLOWED_ORGS))
     parser.add_argument("--labels-json", default="[]")
     parser.add_argument("--inputs-json", default="{}")
     return parser.parse_args(list(argv))

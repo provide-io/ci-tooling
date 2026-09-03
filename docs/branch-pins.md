@@ -49,8 +49,25 @@ reproducible on a laptop, visible in review, and covered by the merge guard.
 
 ## Short form
 
-Layers 1, 2, 3 and 5 take `<package>@<ref>`, comma- or newline-separated. The URL
-is expanded under the repository's own organization.
+Layers 1, 2, 3 and 5 take `<package>@<ref>` or `<owner>/<package>@<ref>`, comma-
+or newline-separated.
+
+Without an owner the repository's own organization is assumed, which covers
+sibling repositories:
+
+```
+provide-foundation@feat/x
+```
+
+With an owner it reaches a fork living somewhere else — the case these pins
+mostly exist for:
+
+```
+livingstaccato/python-hcl2@fix/heredoc-line-end
+```
+
+Either way the distribution name is taken to match the repository name. A pin
+where those differ needs the long form below.
 
 ## Long form with conditions
 
@@ -87,9 +104,11 @@ name by coincidence.
 
 ## Security
 
-Every pin URL is checked against `pin-allowed-orgs` (default
-`github.com/provide-io/*`), matched as `host/owner/repo`. A URL that does not
-match fails the job rather than being skipped. Non-HTTPS URLs, userinfo before
+Every pin URL is checked against `pin-allowed-orgs`, matched as
+`host/owner/repo`. The default is
+`github.com/provide-io/*,github.com/livingstaccato/*` — the suite, plus where
+forks of third-party packages live. A URL that does not match fails the job
+rather than being skipped. Non-HTTPS URLs, userinfo before
 the host, and `..` in the path are all rejected outright.
 
 Labels and repository variables are safe sources because setting either requires

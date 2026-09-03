@@ -11,6 +11,23 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+### Added
+
+- **The short form can name another owner: `<owner>/<package>@<ref>`.** It only
+  ever expanded under the current repository's org, so the four layers that need
+  no commit — dispatch input, PR label, `CI_PINS` variable, workflow input —
+  could not reach a fork living somewhere else. That is the case branch pins
+  mostly exist for, and only `.ci/pins.toml` could express it. A bare
+  `<package>@<ref>` still assumes the repository's own org.
+
+### Changed
+
+- **The default allowlist covers `github.com/livingstaccato/*` as well as
+  `github.com/provide-io/*`.** Forks of third-party packages live there, and the
+  old default rejected every one of them. The value now lives in one place,
+  `pins_core.DEFAULT_ALLOWED_ORGS`, rather than being repeated across two CLIs
+  and four YAML files.
+
 ## [0.6.1] - 2026-09-03
 
 Closes a hole in 0.6.0, found by running branch pins against a real repository

@@ -17,6 +17,11 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
+# Where a pin is allowed to point, matched as host/owner/repo. The suite lives
+# under provide-io; forks of third-party packages live under livingstaccato, and
+# pinning to one of those is the case branch pins exist for.
+DEFAULT_ALLOWED_ORGS = ("github.com/provide-io/*", "github.com/livingstaccato/*")
+
 
 class PinNotAllowedError(Exception):
     """Raised when a pin points somewhere the allowlist does not permit."""
@@ -57,18 +62,25 @@ class Layers:
 
 
 def _parse_short_form(text: str, layer: str, ctx: Context) -> list[Pin]:
-    """Expand `pkg@ref` entries into pins under the repository's own org."""
-    org = ctx.repo.split("/")[0]
+    """Expand `pkg@ref` or `owner/pkg@ref` entries into pins.
+
+    Without an owner the repository's own org is assumed, which covers sibling
+    repositories. An explicit owner is what reaches a fork living somewhere else.
+    Either way the distribution name is taken to match the repository name; a pin
+    where those differ needs the long form in `.ci/pins.toml`.
+    """
+    default_org = ctx.repo.split("/")[0]
     pins = []
     for entry in text.replace(",", "\n").split("\n"):
         item = entry.strip()
         if not item:
             continue
-        package, _, ref = item.partition("@")
+        spec, _, ref = item.partition("@")
+        owner, _, package = spec.strip().rpartition("/")
         pins.append(
             Pin(
-                package=package.strip(),
-                url=f"git+https://github.com/{org}/{package.strip()}@{ref.strip()}",
+                package=package,
+                url=f"git+https://github.com/{owner or default_org}/{package}@{ref.strip()}",
                 layer=layer,
             )
         )

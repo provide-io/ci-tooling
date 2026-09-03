@@ -23,10 +23,9 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import pins_patch
-from pins_core import Context, Layers, Pin, resolve_pins
+from pins_core import DEFAULT_ALLOWED_ORGS, Context, Layers, Pin, resolve_pins
 
 DEFAULT_RECEIPT = ".ci/.pins-applied.json"
-DEFAULT_ALLOWED_ORGS = ("github.com/provide-io/*",)
 
 
 def _parse_args(argv: Sequence[str]) -> argparse.Namespace:

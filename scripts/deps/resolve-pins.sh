@@ -25,6 +25,6 @@ exec "$PY" "${CI_TOOLING_PATH:?}/scripts/deps/resolve_pins.py" \
   --caller-input "${CALLER_PINS:-}" \
   --pins-file "${PINS_FILE:-.ci/pins.toml}" \
   --auto-siblings "${AUTO_SIBLINGS:-}" \
-  --allowed-orgs "${ALLOWED_ORGS:-github.com/provide-io/*}" \
+  --allowed-orgs "${ALLOWED_ORGS:-github.com/provide-io/*,github.com/livingstaccato/*}" \
   --labels-json "$LABEL_PINS_JSON" \
   --inputs-json "$INPUTS_JSON"

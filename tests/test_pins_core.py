@@ -5,7 +5,15 @@
 from __future__ import annotations
 
 import pytest
-from pins_core import Context, Layers, Pin, PinNotAllowedError, pins_digest, resolve_pins
+from pins_core import (
+    DEFAULT_ALLOWED_ORGS,
+    Context,
+    Layers,
+    Pin,
+    PinNotAllowedError,
+    pins_digest,
+    resolve_pins,
+)
 
 ALLOWED = ("github.com/provide-io/*",)
 
@@ -262,3 +270,29 @@ def test_ignoring_conditions_applies_every_declared_pin() -> None:
     )
 
     assert [pin.package for pin in pins] == ["provide-foundation"]
+
+
+def test_short_form_can_name_another_owner_for_a_fork() -> None:
+    pins = resolve_pins(
+        Layers(caller_input="livingstaccato/python-hcl2@main"),
+        ctx(),
+        allowed_orgs=("github.com/livingstaccato/*",),
+    )
+
+    assert pins == [
+        Pin(
+            package="python-hcl2",
+            url="git+https://github.com/livingstaccato/python-hcl2@main",
+            layer="caller-input",
+        )
+    ]
+
+
+def test_the_default_allowlist_covers_the_suite_and_the_forks() -> None:
+    pins = resolve_pins(
+        Layers(caller_input="provide-foundation@x,livingstaccato/python-hcl2@y"),
+        ctx(),
+        allowed_orgs=DEFAULT_ALLOWED_ORGS,
+    )
+
+    assert [pin.package for pin in pins] == ["provide-foundation", "python-hcl2"]
