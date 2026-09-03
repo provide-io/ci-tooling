@@ -11,6 +11,11 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-09-03
+
+Closes a hole in 0.6.0, found by running branch pins against a real repository
+rather than a fixture.
+
 ### Fixed
 
 - **The pin guards now also catch a lockfile that outlived its pins.** Clearing
