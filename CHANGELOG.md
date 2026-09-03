@@ -11,6 +11,16 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The pin guards now also catch a lockfile that outlived its pins.** Clearing
+  the pins restores `pyproject.toml` but does not re-lock, so uv keeps the
+  overrides under `[manifest] overrides` until the next resolve — long enough to
+  commit them by accident, and past the point where the receipt file the
+  pre-commit hook watches still exists. `check_no_pins.py` reads the lockfile as
+  well, and `apply_pins.py clear` now says to run `uv lock`. Found by running the
+  feature against `pyvider-rpcplugin` rather than a fixture.
+
 ## [0.6.0] - 2026-09-03
 
 One feature: branch pins. A minor rather than a patch because it adds seven

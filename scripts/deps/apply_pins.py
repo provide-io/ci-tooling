@@ -84,6 +84,7 @@ def _clear(args: argparse.Namespace) -> int:
     project.write_text(pins_patch.clear_pins(project.read_text()), encoding="utf-8")
     Path(args.receipt).unlink(missing_ok=True)
     print(f"cleared pins from {project}")
+    print("run `uv lock` next: clearing the pins does not remove them from uv.lock")
     return 0
 
 

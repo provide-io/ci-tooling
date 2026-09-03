@@ -107,7 +107,9 @@ work. Three guards:
 - **Release block** — `python-release.yml` will not build while any pin is
   declared.
 - **Local guard** — a pre-commit hook refuses to commit `pyproject.toml` or
-  `uv.lock` while pins are applied to the working tree.
+  `uv.lock` while pins are applied to the working tree, and also refuses a
+  `uv.lock` that still carries `[manifest] overrides`. Clearing the pins
+  restores `pyproject.toml` but does not re-lock, so run `uv lock` afterwards.
 
 ## Locally
 
