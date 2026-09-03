@@ -11,6 +11,17 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-03
+
+One feature: branch pins. A minor rather than a patch because it adds seven
+`python-ci` inputs, two actions, and a `pin-guard` job to both the CI and the
+release workflow.
+
+Inert unless a caller asks for it -- no pins file, variable, label or input
+means nothing is patched and nothing is installed differently. The one change
+every caller sees is a uv `cache-suffix`, which shifts cache keys to
+`pins-none` and costs a single cold cache fill.
+
 ### Added
 
 - **Branch pins: resolve a dependency from a git ref instead of the registry.**
