@@ -112,7 +112,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           repository: provide-io/ci-tooling
-          ref: v0
+          # The commit this reusable workflow is running from, so scripts/ come
+          # from the same ref the caller pinned rather than always the moving
+          # tag. That is what makes a SHA pin cover the whole thing. Falls back
+          # to v0 under act, which does not populate job_workflow_sha.
+          ref: ${{ github.job_workflow_sha || 'v0' }}
           path: .ci-tooling
 
       - name: 🐍 Setup Python
@@ -189,7 +193,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           repository: provide-io/ci-tooling
-          ref: v0
+          # The commit this reusable workflow is running from, so scripts/ come
+          # from the same ref the caller pinned rather than always the moving
+          # tag. That is what makes a SHA pin cover the whole thing. Falls back
+          # to v0 under act, which does not populate job_workflow_sha.
+          ref: ${{ github.job_workflow_sha || 'v0' }}
           path: .ci-tooling
 
       - name: 🐍 Setup Python
@@ -252,7 +260,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           repository: provide-io/ci-tooling
-          ref: v0
+          # The commit this reusable workflow is running from, so scripts/ come
+          # from the same ref the caller pinned rather than always the moving
+          # tag. That is what makes a SHA pin cover the whole thing. Falls back
+          # to v0 under act, which does not populate job_workflow_sha.
+          ref: ${{ github.job_workflow_sha || 'v0' }}
           path: .ci-tooling
 
       - name: 🐍 Setup Python
@@ -305,7 +317,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           repository: provide-io/ci-tooling
-          ref: v0
+          # The commit this reusable workflow is running from, so scripts/ come
+          # from the same ref the caller pinned rather than always the moving
+          # tag. That is what makes a SHA pin cover the whole thing. Falls back
+          # to v0 under act, which does not populate job_workflow_sha.
+          ref: ${{ github.job_workflow_sha || 'v0' }}
           path: .ci-tooling
 
       - name: 🐍 Setup Python
@@ -358,7 +374,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           repository: provide-io/ci-tooling
-          ref: v0
+          # The commit this reusable workflow is running from, so scripts/ come
+          # from the same ref the caller pinned rather than always the moving
+          # tag. That is what makes a SHA pin cover the whole thing. Falls back
+          # to v0 under act, which does not populate job_workflow_sha.
+          ref: ${{ github.job_workflow_sha || 'v0' }}
           path: .ci-tooling
 
       - name: 🐍 Setup Python
@@ -412,7 +432,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           repository: provide-io/ci-tooling
-          ref: v0
+          # The commit this reusable workflow is running from, so scripts/ come
+          # from the same ref the caller pinned rather than always the moving
+          # tag. That is what makes a SHA pin cover the whole thing. Falls back
+          # to v0 under act, which does not populate job_workflow_sha.
+          ref: ${{ github.job_workflow_sha || 'v0' }}
           path: .ci-tooling
 
       - name: 🐍 Setup Python
@@ -455,7 +479,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           repository: provide-io/ci-tooling
-          ref: v0
+          # The commit this reusable workflow is running from, so scripts/ come
+          # from the same ref the caller pinned rather than always the moving
+          # tag. That is what makes a SHA pin cover the whole thing. Falls back
+          # to v0 under act, which does not populate job_workflow_sha.
+          ref: ${{ github.job_workflow_sha || 'v0' }}
           path: .ci-tooling
 
       - name: 🐍 Setup Python
@@ -497,7 +525,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           repository: provide-io/ci-tooling
-          ref: v0
+          # The commit this reusable workflow is running from, so scripts/ come
+          # from the same ref the caller pinned rather than always the moving
+          # tag. That is what makes a SHA pin cover the whole thing. Falls back
+          # to v0 under act, which does not populate job_workflow_sha.
+          ref: ${{ github.job_workflow_sha || 'v0' }}
           path: .ci-tooling
 
       - name: 🐍 Setup Python

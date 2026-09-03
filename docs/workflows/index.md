@@ -87,24 +87,23 @@ jobs:
 # Recommended: the major-version tag, which moves as v0 is cut
 uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
 
+# Also supported: a commit SHA, for a caller that wants nothing to move
+uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@194e51a...  # v0
+
 # Not recommended: a branch, which moves on every push
 uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@main
 ```
 
-**A commit SHA does not pin what you would expect it to.** It fixes the
-workflow file, but the workflow checks its own scripts out at `ref: v0`:
+A SHA pin covers the whole pipeline, not just the workflow file.
+`python-ci.yml` checks its own scripts out at
+`${{ github.job_workflow_sha }}` -- the commit it is itself running from --
+so `scripts/` comes from the same ref the caller pinned. Pin a SHA and
+nothing moves; pin `@v0` and the whole thing moves together when the tag is
+cut. Both are coherent; pick by whether you want the tag's updates.
 
-```yaml
-- uses: actions/checkout@...
-  with:
-    repository: provide-io/ci-tooling
-    ref: v0
-    path: .ci-tooling
-```
-
-So a SHA-pinned caller gets immutable orchestration and whatever
-`scripts/` `v0` points at today. Pin `@v0` and take both together, rather
-than a SHA that only half-holds.
+A reusable workflow runs with the calling repository's token, so a caller
+that passes secrets or grants broad `permissions` has a real reason to
+prefer the SHA.
 
 ## Common Patterns
 
