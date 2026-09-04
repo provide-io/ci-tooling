@@ -115,7 +115,7 @@ on:
         type: string
         default: '{}'
       block-merge-on-pins:
-        description: 'Report a separate failing check while any pin is active, so branch protection can stop a pinned pull request merging. A pin is not carried by the merge, so the default branch would resolve from the registry without it'
+        description: 'Fail the separate No Active Pins check while any pin is active, so branch protection can stop a pinned pull request merging. A pin is not carried by the merge, so the default branch would resolve from the registry without it. Set false to report the pins as a warning instead; the check still runs either way, because a required check that never reports blocks a repository forever'
         type: boolean
         default: true
     secrets:
@@ -953,7 +953,11 @@ jobs:
     # Deliberately a separate job. The test jobs run *with* the pins and should go
     # green -- that is what pinning is for. This one stays red until the pin is
     # gone, so branch protection has something to block the merge on.
-    if: github.event_name == 'pull_request' && inputs.block-merge-on-pins
+    #
+    # It has no `if:` on purpose. A required status check that never reports is
+    # pending forever, so a job that vanished when block-merge-on-pins was turned
+    # off would wedge every pull request in the repository. Instead it always
+    # runs, and the input decides whether an active pin is an error or a warning.
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
@@ -986,6 +990,7 @@ jobs:
         env:
           CI_TOOLING_PATH: .ci-tooling
           PINS: ${{ steps.pins.outputs.pins }}
+          ENFORCE: ${{ inputs.block-merge-on-pins }}
         run: .ci-tooling/scripts/deps/require-no-pins.sh
 
   # ==================================================================================

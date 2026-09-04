@@ -8,4 +8,6 @@ set -euo pipefail
 
 PY=$(command -v python3 || command -v python)
 
-exec "$PY" "${CI_TOOLING_PATH:?}/scripts/deps/require_no_pins.py" --pins-json "${PINS:-[]}"
+exec "$PY" "${CI_TOOLING_PATH:?}/scripts/deps/require_no_pins.py" \
+  --pins-json "${PINS:-[]}" \
+  --enforce "${ENFORCE:-true}"

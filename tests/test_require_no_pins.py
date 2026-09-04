@@ -46,3 +46,17 @@ def test_the_message_names_every_active_pin(capsys: pytest.CaptureFixture[str]) 
 
     err = capsys.readouterr().err
     assert "a" in err and "b" in err
+
+
+def test_reporting_without_enforcing_passes_but_still_says_so(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    code = require_no_pins.main(["--pins-json", PINS, "--enforce", "false"])
+
+    assert code == 0
+    out = capsys.readouterr()
+    assert "python-hcl2" in out.out + out.err
+
+
+def test_enforcing_is_the_default() -> None:
+    assert require_no_pins.main(["--pins-json", PINS]) == 1

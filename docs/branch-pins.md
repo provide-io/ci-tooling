@@ -234,6 +234,12 @@ Settings → Branches → main → Require status checks to pass
 Turn it off with `block-merge-on-pins: false` if a repository genuinely wants to
 merge pinned work. It is on by default and is a no-op for anyone not using pins.
 
+Note what `false` does **not** do: it does not skip the job. The check still runs
+and still reports the pins, as a warning instead of an error. That is deliberate
+— a required status check that never reports is treated as pending forever, so a
+job that vanished when the input was flipped would wedge every pull request in
+the repository.
+
 The sequence it is enforcing:
 
 1. pin the branch, iterate until CI is green

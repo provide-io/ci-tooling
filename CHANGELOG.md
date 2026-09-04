@@ -11,6 +11,19 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`📌 No Active Pins` always runs, instead of skipping when disabled.** As
+  shipped in 0.8.0 the job carried
+  `if: github.event_name == 'pull_request' && inputs.block-merge-on-pins`, so
+  setting `block-merge-on-pins: false` made it disappear. A required status check
+  that never reports is pending forever, so anyone who had made it required and
+  then turned the input off would have wedged every pull request in the
+  repository — the exact failure the check is supposed to prevent, inverted.
+
+  The job now has no `if:` at all. The input decides whether an active pin is an
+  error or a warning, and the check reports either way.
+
 ## [0.8.0] - 2026-09-03
 
 A minor because it adds a `workflow_call` input and a job that shows up as a new check on every
