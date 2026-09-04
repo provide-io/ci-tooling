@@ -11,6 +11,24 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+### Added
+
+- **A `📌 No Active Pins` check, so a pinned pull request cannot merge.** A pin
+  is not carried by the merge: land a pinned branch and the default branch
+  resolves from the registry without it, getting the exact thing the pin was
+  compensating for. The existing merge guard only catches the committed-file
+  case, and only once the push to the default branch has already happened.
+
+  The new check is a separate job on purpose. The test jobs keep running *with*
+  the pins and keep going green — that is what pinning is for — while this one
+  stays red until the pin is gone, naming each pin and the layer it came from.
+  Making it a required check in branch protection is what turns it into an
+  actual block. It resolves every layer, so a label or a `CI_PINS` variable
+  counts, not just `.ci/pins.toml`.
+
+  On by default via `block-merge-on-pins`, and a no-op for callers not using
+  pins. Set it to `false` to allow merging pinned work.
+
 ## [0.7.1] - 2026-09-03
 
 Documentation only. Three things the label layer needs that the 0.7.0 guide did

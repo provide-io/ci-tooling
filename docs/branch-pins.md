@@ -211,6 +211,40 @@ work. Three guards:
   `uv.lock` that still carries `[manifest] overrides`. Clearing the pins
   restores `pyproject.toml` but does not re-lock, so run `uv lock` afterwards.
 
+## A pin must not survive the merge
+
+A pin lets a branch be *tested* against unreleased code. It does not make that
+branch mergeable, and the difference matters: **the pin is not carried by the
+merge**. Merge a pinned pull request and the default branch resolves from the
+registry without it, getting exactly the thing the pin was compensating for.
+
+So `python-ci.yml` reports a separate check, `📌 No Active Pins`, which fails
+while anything is pinned — through any layer, label and variable included, not
+just the file. The test jobs still run *with* the pins and still go green; only
+this one check stays red.
+
+Make it a required check in branch protection and a pinned pull request cannot
+merge until the dependency actually ships:
+
+```
+Settings → Branches → main → Require status checks to pass
+  ✓ ci / 📌 No Active Pins
+```
+
+Turn it off with `block-merge-on-pins: false` if a repository genuinely wants to
+merge pinned work. It is on by default and is a no-op for anyone not using pins.
+
+The sequence it is enforcing:
+
+1. pin the branch, iterate until CI is green
+2. land the dependency change upstream
+3. release it
+4. remove the pin, watch `📌 No Active Pins` go green
+5. merge
+
+Skipping to 5 is what this prevents. The merge guard in §Lifecycle catches the
+committed-file case after the fact; this catches every layer, before.
+
 ## Locally
 
 Local application reads `.ci/pins.toml` — a label lives on the pull request and

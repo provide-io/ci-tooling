@@ -114,6 +114,10 @@ on:
         description: 'JSON object of caller values matched by a pin''s when.input condition'
         type: string
         default: '{}'
+      block-merge-on-pins:
+        description: 'Report a separate failing check while any pin is active, so branch protection can stop a pinned pull request merging. A pin is not carried by the merge, so the default branch would resolve from the registry without it'
+        type: boolean
+        default: true
     secrets:
       CODECOV_TOKEN:
         description: 'Codecov token for coverage upload'
@@ -942,6 +946,49 @@ jobs:
   # 📋 CI Summary
   # ==================================================================================
   # ==================================================================================
+  # 📌 Unpinned-merge check
+  # ==================================================================================
+  pins-clean:
+    name: 📌 No Active Pins
+    # Deliberately a separate job. The test jobs run *with* the pins and should go
+    # green -- that is what pinning is for. This one stays red until the pin is
+    # gone, so branch protection has something to block the merge on.
+    if: github.event_name == 'pull_request' && inputs.block-merge-on-pins
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: provide-io/ci-tooling
+          ref: ${{ github.job_workflow_sha || 'v0' }}
+          path: .ci-tooling
+
+      # Resolve every layer, so a label or a variable counts, not just the file.
+      - name: 📌 Resolve branch pins
+        id: pins
+        uses: ./.ci-tooling/actions/resolve-pins
+        with:
+          dispatch-pins: ${{ inputs.dispatch-pins }}
+          variable-pins: ${{ vars.CI_PINS }}
+          caller-pins: ${{ inputs.package-pins }}
+          pins-file: ${{ inputs.pins-file }}
+          auto-pin-siblings: ${{ inputs.auto-pin-siblings }}
+          sibling-repos: ${{ inputs.sibling-repos }}
+          allowed-orgs: ${{ inputs.pin-allowed-orgs }}
+          label-pins-json: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          inputs-json: ${{ inputs.pin-inputs-json }}
+
+      # Fails while anything is pinned, naming each pin and where it came from.
+      - name: 📌 Refuse to merge on a pin
+        env:
+          CI_TOOLING_PATH: .ci-tooling
+          PINS: ${{ steps.pins.outputs.pins }}
+        run: .ci-tooling/scripts/deps/require-no-pins.sh
+
+  # ==================================================================================
   # 📌 Branch Pin Guard
   # ==================================================================================
   pin-guard:
@@ -969,7 +1016,7 @@ jobs:
 
   summary:
     name: 📋 CI Summary
-    needs: [quality, test, test-linux-arm, test-macos-arm, test-macos-intel, test-windows, test-windows-arm, security, secret-scan, build, pin-guard]
+    needs: [quality, test, test-linux-arm, test-macos-arm, test-macos-intel, test-windows, test-windows-arm, security, secret-scan, build, pin-guard, pins-clean]
     if: always()
     runs-on: ubuntu-24.04
     steps:
