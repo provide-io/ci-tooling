@@ -11,6 +11,11 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-03
+
+A minor because it adds a `workflow_call` input and a job that shows up as a new check on every
+caller's pull requests — including callers who never pin, for whom it passes and does nothing.
+
 ### Added
 
 - **A `📌 No Active Pins` check, so a pinned pull request cannot merge.** A pin
