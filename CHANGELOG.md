@@ -11,6 +11,11 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-03
+
+Closes a hole in 0.8.0 found before anyone hit it: the merge check could remove itself, and a
+required check that never reports blocks a repository forever.
+
 ### Fixed
 
 - **`📌 No Active Pins` always runs, instead of skipping when disabled.** As
