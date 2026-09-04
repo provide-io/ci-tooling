@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      package-pins:
+        description: 'Pins for the dispatch-layer test, as <pkg>@<ref>'
+        type: string
+        required: false
+        default: 'provide-foundation@main'
 
 env:
   FORCE_COLOR: "1"
@@ -160,6 +166,90 @@ jobs:
   #     matrix-testing: false
 
   # ==================================================================================
+  # 📌 Test Branch Pin Layers
+  # ==================================================================================
+  test-pin-layers:
+    name: 📌 Test pin layers
+    # Exercises the three layers no real caller has driven yet. The others --
+    # PR label, pins file, caller input -- are covered by live use.
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      # Layer 3: the CI_PINS repository variable.
+      - name: 📌 Resolve from a repository variable
+        id: variable
+        uses: ./actions/resolve-pins
+        with:
+          ci-tooling-path: ${{ github.workspace }}
+          variable-pins: 'provide-foundation@main'
+
+      - name: ✅ Assert the variable layer resolved
+        env:
+          PINS: ${{ steps.variable.outputs.pins }}
+        run: |
+          ci/assert-pins.sh "CI_PINS variable" 1 '"layer": "repo-variable"' 'provide-io/provide-foundation@main'
+
+      # Layer 1: a workflow_dispatch input, and that it outranks the variable.
+      - name: 📌 Resolve a dispatch input over a variable
+        id: dispatch
+        uses: ./actions/resolve-pins
+        with:
+          ci-tooling-path: ${{ github.workspace }}
+          dispatch-pins: ${{ inputs.package-pins || 'provide-foundation@from-dispatch' }}
+          variable-pins: 'provide-foundation@from-variable'
+
+      - name: ✅ Assert dispatch wins over the variable
+        env:
+          PINS: ${{ steps.dispatch.outputs.pins }}
+        run: |
+          ci/assert-pins.sh "dispatch precedence" 1 '"layer": "dispatch"'
+
+      # Layer 6: sibling matching, which needs a real API lookup. `main` exists
+      # in provide-foundation and no repository is named after this branch, so
+      # the first is expected to match and the second not to.
+      - name: 📌 Resolve by sibling-branch match
+        id: siblings
+        uses: ./actions/resolve-pins
+        with:
+          ci-tooling-path: ${{ github.workspace }}
+          auto-pin-siblings: 'true'
+          sibling-repos: 'provide-foundation,provide-testkit'
+
+      - name: ✅ Assert sibling matching found the branch
+        if: github.ref_name == 'main'
+        env:
+          PINS: ${{ steps.siblings.outputs.pins }}
+        run: |
+          ci/assert-pins.sh "auto sibling" 2 '"layer": "auto-sibling"' 'provide-foundation@main' 'provide-testkit@main'
+
+      # On a branch, no sibling has a matching branch name, so the same lookup
+      # must come back empty rather than guessing.
+      - name: ✅ Assert sibling matching found nothing off main
+        if: github.ref_name != 'main'
+        env:
+          PINS: ${{ steps.siblings.outputs.pins }}
+        run: |
+          ci/assert-pins.sh "auto sibling (no match)" 0
+
+      # A pin outside the allowlist must fail the step, not be quietly dropped.
+      - name: 📌 Reject a pin outside the allowlist
+        id: hostile
+        continue-on-error: true
+        uses: ./actions/resolve-pins
+        with:
+          ci-tooling-path: ${{ github.workspace }}
+          variable-pins: 'attacker/evil@main'
+          allowed-orgs: 'github.com/provide-io/*'
+
+      - name: ✅ Assert the hostile pin was rejected
+        run: |
+          test "${{ steps.hostile.outcome }}" = "failure" \
+            || { echo "::error::allowlist did not reject an out-of-org pin"; exit 1; }
+          echo "✅ allowlist rejected an out-of-org pin"
+
+  # ==================================================================================
   # 📊 Test Summary
   # ==================================================================================
   test-summary:
@@ -168,7 +258,8 @@ jobs:
       test-setup-python-env,
       test-python-quality,
       test-python-test,
-      test-python-build
+      test-python-build,
+      test-pin-layers
     ]
     if: always()
     runs-on: ubuntu-24.04
@@ -184,6 +275,7 @@ jobs:
           echo "| python-quality | ${{ needs.test-python-quality.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| python-test | ${{ needs.test-python-test.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| python-build | ${{ needs.test-python-build.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| pin layers | ${{ needs.test-pin-layers.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
           # Check overall status
           if [ "${{ needs.test-setup-python-env.result }}" = "success" ] && \
              [ "${{ needs.test-python-quality.result }}" = "success" ] && \
