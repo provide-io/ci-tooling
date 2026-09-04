@@ -11,6 +11,11 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-09-03
+
+A patch: no new input, no new job, no new check. `auto-pin-siblings` is opt-in and was not
+usable without a hand-kept list, so nothing that anyone is running behaves differently.
+
 ### Changed
 
 - **`sibling-repos` is now optional; the candidates come from the project's own
