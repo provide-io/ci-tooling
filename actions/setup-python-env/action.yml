@@ -35,6 +35,15 @@ inputs:
     description: 'Branch-scoped pins file'
     required: false
     default: '.ci/pins.toml'
+  variable-pins:
+    description: >
+      Branch pins from a repository or organisation variable, as
+      <pkg>@<ref>. Passed in rather than read here: `vars` is not a context a
+      composite action can evaluate, and referencing it makes this file fail to
+      load at all, taking every workflow that uses the action with it. The
+      calling workflow reads `vars.CI_PINS` and hands it over.
+    required: false
+    default: ''
   pin-allowed-orgs:
     description: 'Glob patterns, as host/owner/repo, that a pin URL must match'
     required: false
@@ -74,7 +83,7 @@ runs:
       env:
         CI_TOOLING_PATH: ${{ github.action_path }}/../..
         CALLER_PINS: ${{ inputs.package-pins }}
-        VARIABLE_PINS: ${{ vars.CI_PINS }}
+        VARIABLE_PINS: ${{ inputs.variable-pins }}
         PINS_FILE: ${{ inputs.pins-file }}
         ALLOWED_ORGS: ${{ inputs.pin-allowed-orgs }}
         LABEL_PINS_JSON: ${{ toJSON(github.event.pull_request.labels.*.name) }}

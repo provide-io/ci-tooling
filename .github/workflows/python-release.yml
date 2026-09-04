@@ -95,6 +95,9 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
           uv-version: ${{ inputs.uv-version }}
+          # `vars` is a context a workflow can evaluate and a composite action
+          # cannot, so it is read here and handed over.
+          variable-pins: ${{ vars.CI_PINS }}
 
       # Lint/type-check using shared quality composite
       - name: 🎨 Quality Checks
@@ -128,6 +131,9 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
           uv-version: ${{ inputs.uv-version }}
+          # `vars` is a context a workflow can evaluate and a composite action
+          # cannot, so it is read here and handed over.
+          variable-pins: ${{ vars.CI_PINS }}
           install-group: ''
 
       # Produce wheel + sdist into dist/
