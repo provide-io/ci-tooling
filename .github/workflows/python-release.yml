@@ -1,3 +1,16 @@
+# The actions this workflow runs are pinned to a commit, not to @main.
+#
+# A consumer pins this workflow to a tag and reasonably expects everything it
+# runs to be pinned with it. At @main they got whatever had landed on this
+# branch since, which is not theoretical: a `vars.CI_PINS` expression added to
+# setup-python-env made that action fail to load, and broke a release in a
+# repository that had pinned this workflow to v0.4.3 and changed nothing
+# itself.
+#
+# The cost is that changing one of these actions takes a second commit to move
+# the pin -- the same bargain already made for every third-party action here.
+# A consumer on an older tag keeps whatever that tag says; this takes effect
+# from the next tag onward.
 name: 'Reusable Python Release'
 
 on:
@@ -91,7 +104,7 @@ jobs:
 
       # Install the requested Python + uv toolchain via ci-tooling helper
       - name: 🐍 Setup Python Environment
-        uses: provide-io/ci-tooling/actions/setup-python-env@main
+        uses: provide-io/ci-tooling/actions/setup-python-env@d65d086993e06a79f3ef5e00e32addf2e26540af  # pinned, see header
         with:
           python-version: ${{ inputs.python-version }}
           uv-version: ${{ inputs.uv-version }}
@@ -101,11 +114,11 @@ jobs:
 
       # Lint/type-check using shared quality composite
       - name: 🎨 Quality Checks
-        uses: provide-io/ci-tooling/actions/python-quality@main
+        uses: provide-io/ci-tooling/actions/python-quality@d65d086993e06a79f3ef5e00e32addf2e26540af  # pinned, see header
 
       # Run the test suite; coverage gate intentionally disabled for release flow
       - name: 🧪 Run Tests
-        uses: provide-io/ci-tooling/actions/python-test@main
+        uses: provide-io/ci-tooling/actions/python-test@d65d086993e06a79f3ef5e00e32addf2e26540af  # pinned, see header
         with:
           coverage-threshold: 0
           parallel: ${{ inputs.parallel-tests }}
@@ -127,7 +140,7 @@ jobs:
 
       # Build environment: no dev group since we're only producing wheels/sdist
       - name: 🐍 Setup Python Environment
-        uses: provide-io/ci-tooling/actions/setup-python-env@main
+        uses: provide-io/ci-tooling/actions/setup-python-env@d65d086993e06a79f3ef5e00e32addf2e26540af  # pinned, see header
         with:
           python-version: ${{ inputs.python-version }}
           uv-version: ${{ inputs.uv-version }}
@@ -138,7 +151,7 @@ jobs:
 
       # Produce wheel + sdist into dist/
       - name: 🏗️ Build Package
-        uses: provide-io/ci-tooling/actions/python-build@main
+        uses: provide-io/ci-tooling/actions/python-build@d65d086993e06a79f3ef5e00e32addf2e26540af  # pinned, see header
         with:
           build-backend: ${{ inputs.build-backend }}
 
@@ -177,7 +190,7 @@ jobs:
 
       # Create the GH release tagged vX.Y.Z with artifacts attached
       - name: 🏷️ Create GitHub Release
-        uses: provide-io/ci-tooling/actions/github-release@main
+        uses: provide-io/ci-tooling/actions/github-release@d65d086993e06a79f3ef5e00e32addf2e26540af  # pinned, see header
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           artifacts-path: dist/
