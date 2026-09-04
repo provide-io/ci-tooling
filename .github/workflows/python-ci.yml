@@ -103,7 +103,7 @@ on:
         type: boolean
         default: false
       sibling-repos:
-        description: 'Sibling repository names considered for auto-pinning'
+        description: 'Sibling repository names considered for auto-pinning. Empty derives them from this project''s dependencies, so no caller has to keep a list of its siblings in step'
         type: string
         default: ''
       pin-allowed-orgs:

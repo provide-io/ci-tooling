@@ -13,6 +13,7 @@ from pins_core import (
     PinNotAllowedError,
     pins_digest,
     resolve_pins,
+    sibling_candidates,
 )
 
 ALLOWED = ("github.com/provide-io/*",)
@@ -312,3 +313,52 @@ def test_short_form_takes_an_explicit_distribution_name() -> None:
             layer="caller-input",
         )
     ]
+
+
+PYPROJECT_WITH_SIBLINGS = """\
+[project]
+name = "pyvider"
+dependencies = [
+  "provide-foundation>=0.4.0",
+  "pyvider-cty>=0.5.3",
+  "attrs>=25.4.0",
+  "python-hcl2>=8.1.3",
+]
+
+[dependency-groups]
+dev = ["provide-testkit>=0.4.5", "pytest"]
+"""
+
+
+def test_dependency_names_are_extracted_for_sibling_matching() -> None:
+    names = sibling_candidates(PYPROJECT_WITH_SIBLINGS)
+
+    # Everything declared, from both dependencies and groups. Which of these are
+    # actually sibling repositories is decided by the branch lookup, which 404s
+    # for a name that is not a repository in the org.
+    assert names == (
+        "attrs",
+        "provide-foundation",
+        "provide-testkit",
+        "pytest",
+        "python-hcl2",
+        "pyvider-cty",
+    )
+
+
+def test_specifiers_extras_and_markers_are_stripped() -> None:
+    text = """\
+[project]
+name = "x"
+dependencies = [
+  "provide-foundation[all]>=0.4.3",
+  "supsrc ; python_version >= '3.12'",
+  "Provide_Telemetry == 1.0",
+]
+"""
+
+    assert sibling_candidates(text) == ("provide-foundation", "provide-telemetry", "supsrc")
+
+
+def test_a_project_with_no_dependencies_yields_nothing() -> None:
+    assert sibling_candidates('[project]\nname = "x"\n') == ()

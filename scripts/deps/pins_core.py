@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import fnmatch
 import hashlib
+import re
 import tomllib
 import urllib.parse
 from collections.abc import Mapping, Sequence
@@ -101,6 +102,11 @@ def _parse_labels(labels: Sequence[str], ctx: Context) -> list[Pin]:
     """Turn `pin:<pkg>@<ref>` labels into pins, ignoring every other label."""
     wanted = [item[len(LABEL_PREFIX) :] for item in labels if item.startswith(LABEL_PREFIX)]
     return _parse_short_form("\n".join(wanted), "pr-label", ctx)
+
+
+def _normalize_name(name: str) -> str:
+    """PEP 503 normalization, so `Provide_Telemetry` and `provide-telemetry` agree."""
+    return re.sub(r"[-_.]+", "-", name).lower()
 
 
 def _glob_any(value: str | None, patterns: Sequence[str]) -> bool:
@@ -204,6 +210,30 @@ def resolve_pins(
         for pin in group:
             winners.setdefault(pin.package, pin)
     return list(winners.values())
+
+
+def sibling_candidates(pyproject_text: str) -> tuple[str, ...]:
+    """Distribution names this project depends on, normalized and sorted.
+
+    Feeds auto-pin-siblings, which otherwise needs a hand-kept list of sibling
+    repositories in every caller. Which of these names is really a sibling is not
+    decided here: the branch lookup asks GitHub, and a name that is not a
+    repository in the org simply does not match. That keeps the definition honest
+    -- a sibling you do not depend on has no business being pinned.
+    """
+    document = tomllib.loads(pyproject_text)
+    raw: list[str] = list(document.get("project", {}).get("dependencies", []))
+    for group in document.get("dependency-groups", {}).values():
+        raw += [item for item in group if isinstance(item, str)]
+
+    names = set()
+    for requirement in raw:
+        # Strip marker, extras and any version specifier to leave the bare name.
+        head = requirement.split(";")[0].split("[")[0]
+        name = re.split(r"[<>=!~ (]", head, maxsplit=1)[0].strip()
+        if name:
+            names.add(_normalize_name(name))
+    return tuple(sorted(names))
 
 
 def pins_digest(pins: Sequence[Pin]) -> str:

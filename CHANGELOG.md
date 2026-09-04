@@ -11,6 +11,21 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+### Changed
+
+- **`sibling-repos` is now optional; the candidates come from the project's own
+  dependencies.** The layer previously required every caller to hand-type the
+  list — nine repositories each naming the other eight, drifting apart
+  independently — which made an opt-in feature not worth opting into. A project
+  already declares what it depends on, and a sibling it does not depend on
+  should not be pinned, so the dependency list is both less work and the more
+  correct definition.
+
+  No classification is attempted: names that are not repositories in the
+  organization fail the branch lookup and drop out, which is the filtering. The
+  cost is one API call per declared dependency when the layer is enabled. Pass
+  `sibling-repos` explicitly to narrow it.
+
 ## [0.8.1] - 2026-09-03
 
 Closes a hole in 0.8.0 found before anyone hit it: the merge check could remove itself, and a

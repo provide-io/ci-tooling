@@ -177,11 +177,28 @@ A pin with no `when` always applies. Every condition present must match.
 ```yaml
 with:
   auto-pin-siblings: true
-  sibling-repos: 'provide-foundation,provide-testkit,pyvider-rpcplugin'
 ```
 
-Any listed repository that has a branch of the same name as the current head ref
-is pinned to it. See *Which one to use* above for why this stays opt-in.
+Any sibling repository with a branch of the same name as the current head ref is
+pinned to it. See *Which one to use* above for why this stays opt-in.
+
+**The candidate list defaults to this project's own dependencies.** A sibling you
+do not depend on has no business being pinned, so the dependency list is both
+less work than a hand-kept roster and the more correct definition. Names that are
+not repositories in the organization simply fail the branch lookup and drop out,
+which is the filtering — nothing has to classify them in advance.
+
+Pass `sibling-repos` explicitly to override that, for the rare case where you
+want a narrower set:
+
+```yaml
+with:
+  auto-pin-siblings: true
+  sibling-repos: 'provide-foundation,provide-testkit'
+```
+
+The cost of the default is one API call per declared dependency, third-party
+ones included, and only when this layer is enabled.
 
 ## Security
 

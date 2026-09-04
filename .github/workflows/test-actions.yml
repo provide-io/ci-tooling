@@ -233,6 +233,22 @@ jobs:
         run: |
           ci/assert-pins.sh "auto sibling (no match)" 0
 
+      # With no sibling-repos given, candidates come from this project's own
+      # dependencies. ci-tooling declares none, so the lookup must find nothing
+      # rather than erroring on an empty list.
+      - name: 📌 Resolve siblings with no list supplied
+        id: derived
+        uses: ./actions/resolve-pins
+        with:
+          ci-tooling-path: ${{ github.workspace }}
+          auto-pin-siblings: 'true'
+
+      - name: ✅ Assert the derived path ran cleanly
+        env:
+          PINS: ${{ steps.derived.outputs.pins }}
+        run: |
+          ci/assert-pins.sh "derived siblings" 0
+
       # A pin outside the allowlist must fail the step, not be quietly dropped.
       - name: 📌 Reject a pin outside the allowlist
         id: hostile

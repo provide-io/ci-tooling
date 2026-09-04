@@ -35,7 +35,7 @@ inputs:
     required: false
     default: 'false'
   sibling-repos:
-    description: 'Comma- or newline-separated sibling repository names to consider for auto-pinning'
+    description: 'Comma- or newline-separated sibling repository names to consider for auto-pinning. Leave empty to derive them from this project''s own dependencies, which is usually what you want: a sibling you do not depend on should not be pinned'
     required: false
     default: ''
   allowed-orgs:
