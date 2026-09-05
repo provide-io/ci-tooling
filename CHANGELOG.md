@@ -9,7 +9,7 @@ nothing for a repository until that repository moves its `uses:` pin. Note that
 callers pin in two places: the `uses:` line and the `ref:` of the ci-tooling
 checkout used by the TestPyPI verification step.
 
-## [Unreleased]
+## [0.8.3] - 2026-09-05
 
 ### Fixed
 
