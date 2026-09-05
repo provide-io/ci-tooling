@@ -31,6 +31,15 @@ on:
         description: 'Run secret scanning (TruffleHog, Gitleaks)'
         type: boolean
         default: true
+      # Off by default because it preserves what this workflow has always done:
+      # the dependency audit was wrapped in `|| true` at every call site, so a
+      # finding has never stopped a build. Turning it on is a per-repo decision
+      # -- thirteen repositories call this workflow, and a shared default that
+      # reddens all of them at once is not one this workflow should make.
+      fail-on-vulnerability:
+        description: 'Fail the security job when pip-audit reports a known vulnerability'
+        type: boolean
+        default: false
       run-performance:
         description: 'Run performance tests'
         type: boolean
@@ -835,22 +844,27 @@ jobs:
         with:
           pins: ${{ steps.pins.outputs.pins }}
 
+      # Bandit reads source rather than installed packages, but it is invoked
+      # from this virtualenv, so it is installed here. pip-audit is not: it used
+      # to be, and auditing the environment a scanner was just installed into is
+      # what made advisories against the scanner's own dependencies show up as
+      # the caller's.
       - name: 📦 Install dependencies
         if: ${{ !inputs.use-wrknv }}
         run: |
           uv sync --group dev ${{ inputs.no-sources && '--no-sources' || '' }}
           source .venv/bin/activate
-          uv pip install bandit pip-audit
+          uv pip install bandit
 
       - name: 📦 Install dependencies (wrknv)
         if: inputs.use-wrknv
         run: uv sync --all-groups ${{ inputs.no-sources && '--no-sources' || '' }}
 
+      # No pip-audit here either: `--python .venv/bin/python` is the same
+      # install into the audited environment, spelled differently.
       - name: 🔧 Install wrknv
         if: inputs.use-wrknv
-        run: |
-          uv pip install --python .venv/bin/python "wrknv @ git+https://github.com/provide-io/wrknv.git@main"
-          uv pip install --python .venv/bin/python pip-audit
+        run: uv pip install --python .venv/bin/python "wrknv @ git+https://github.com/provide-io/wrknv.git@main"
 
       # uv silently ignores an override for a package nothing depends on, so a
       # mistyped or misnamed pin would otherwise produce a green run against
@@ -870,10 +884,11 @@ jobs:
         if: inputs.use-wrknv
         run: .venv/bin/we run security
 
+      # Audits the resolved lock, with pip-audit run from `uvx` so the scanner
+      # is not part of what it reports on. No virtualenv is activated: reading
+      # the lock does not need one, and not having one is the point.
       - name: 🔍 Check for known vulnerabilities
-        run: |
-          source .venv/bin/activate
-          .ci-tooling/scripts/security/run-pip-audit.sh pip-audit-report.json
+        run: .ci-tooling/scripts/security/run-pip-audit.sh pip-audit-report.json ${{ inputs.fail-on-vulnerability }}
 
       - name: 📤 Upload security reports
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0

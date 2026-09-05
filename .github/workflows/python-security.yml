@@ -23,6 +23,12 @@ on:
         description: 'Run pip-audit dependency check'
         type: boolean
         default: true
+      # Off by default, matching what this workflow has always done: the audit
+      # was wrapped in `|| true`, so a finding never stopped a build.
+      fail-on-vulnerability:
+        description: 'Fail the job when pip-audit reports a known vulnerability'
+        type: boolean
+        default: false
       run-trufflehog:
         description: 'Run TruffleHog secret scanning'
         type: boolean
@@ -55,6 +61,17 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
+      # scripts/ come from the commit this reusable workflow is running from,
+      # so a caller's SHA pin covers them too rather than always taking the
+      # moving tag. Falls back to v0 under act, which leaves
+      # job_workflow_sha empty.
+      - name: 📥 Checkout ci-tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: provide-io/ci-tooling
+          ref: ${{ github.job_workflow_sha || 'v0' }}
+          path: .ci-tooling
+
       - name: 🐍 Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
@@ -66,11 +83,15 @@ jobs:
           version: ${{ inputs.uv-version }}
           enable-cache: true
 
+      # Bandit is invoked from this virtualenv, so it is installed into it.
+      # pip-audit is not: auditing the environment a scanner was just installed
+      # into is what made advisories against the scanner's own dependencies get
+      # reported as the project's.
       - name: 📦 Install dependencies
         run: |
           uv sync --group dev
           source .venv/bin/activate
-          uv pip install bandit pip-audit
+          uv pip install bandit
 
       - name: 🔒 Run Bandit security scan
         if: inputs.run-bandit
@@ -80,13 +101,14 @@ jobs:
           bandit -r ${{ inputs.source-paths }} -f json -o bandit-report.json ${{ inputs.bandit-severity }} || true
           bandit -r ${{ inputs.source-paths }} ${{ inputs.bandit-severity }} || true
 
+      # Audits the resolved lock with pip-audit run from `uvx`, through the same
+      # script python-ci.yml uses. No virtualenv is activated: reading the lock
+      # does not need one, and not having one is the point.
       - name: 🔍 Run pip-audit
         if: inputs.run-pip-audit
         run: |
-          source .venv/bin/activate
           echo "## 🔍 Dependency Vulnerability Check" >> $GITHUB_STEP_SUMMARY
-          pip-audit --format json --output pip-audit-report.json || true
-          pip-audit || true
+          .ci-tooling/scripts/security/run-pip-audit.sh pip-audit-report.json ${{ inputs.fail-on-vulnerability }}
 
       - name: 📤 Upload security reports
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
