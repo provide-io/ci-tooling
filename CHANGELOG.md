@@ -9,6 +9,18 @@ nothing for a repository until that repository moves its `uses:` pin. Note that
 callers pin in two places: the `uses:` line and the `ref:` of the ci-tooling
 checkout used by the TestPyPI verification step.
 
+## [0.8.4] - 2026-09-05
+
+### Added
+
+- `scripts/release/attach-release-artifacts.sh` and `scripts/release/drop-orphan-signatures.sh`, previously duplicated byte-for-byte in `pyvider` and `pyvider-components`. A pre-release review found four defects in them, and fixing one copy is how the two drift.
+
+  `attach-release-artifacts.sh` retries `gh release upload`, which sends each file in turn and gives up on the first rejection with part of the set attached — so one transient 502 can leave a signature beside no artifact. It checks every file before the first upload, because the caller passes globs the workflow shell expands and an unmatched pattern arrives as its literal self; and it stops immediately on the HTTP classes retrying cannot fix rather than spending 75 seconds of backoff on a settled answer.
+
+  `drop-orphan-signatures.sh` removes any `.sigstore.json` whose subject is absent. The asset listing uses `--paginate`: a truncated page would report a present subject as missing, and `gh release delete-asset` is irreversible and runs unattended.
+
+  Additive only. No workflow in this repository calls them yet, and both consumers keep their local copies until they repin, so `v0` callers are unaffected.
+
 ## [0.8.3] - 2026-09-05
 
 ### Fixed
