@@ -29,6 +29,10 @@ on:
         description: 'Fail the job when pip-audit reports a known vulnerability'
         type: boolean
         default: false
+      ignore-vulnerabilities:
+        description: 'Advisory IDs the project has accepted, comma-separated'
+        type: string
+        default: ''
       run-trufflehog:
         description: 'Run TruffleHog secret scanning'
         type: boolean
@@ -108,7 +112,7 @@ jobs:
         if: inputs.run-pip-audit
         run: |
           echo "## 🔍 Dependency Vulnerability Check" >> $GITHUB_STEP_SUMMARY
-          .ci-tooling/scripts/security/run-pip-audit.sh pip-audit-report.json ${{ inputs.fail-on-vulnerability }}
+          .ci-tooling/scripts/security/run-pip-audit.sh pip-audit-report.json ${{ inputs.fail-on-vulnerability }} '${{ inputs.ignore-vulnerabilities }}'
 
       - name: 📤 Upload security reports
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0

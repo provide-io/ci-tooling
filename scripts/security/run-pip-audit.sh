@@ -26,6 +26,16 @@ OUTPUT_FILE="${1:-pip-audit-report.json}"
 # the audit to gate pass "true" -- see `fail-on-vulnerability` in the reusable
 # workflows.
 FAIL_ON_VULNERABILITY="${2:-false}"
+# Advisory IDs the caller has accepted, comma-separated. An entry here says the
+# project looked at the finding and established that it cannot reach the
+# vulnerable code path -- not that the advisory is wrong or unimportant. The
+# reason belongs at the call site, next to the IDs, because that is where
+# someone re-reads it when the dependency moves.
+#
+# The gate stays on for everything else: a fourth advisory against the same
+# package still fails the build, which is the difference between accepting a
+# finding and switching the audit off.
+IGNORE_VULNERABILITIES="${3:-}"
 
 echo "🔍 Running pip-audit dependency vulnerability check"
 
@@ -47,6 +57,16 @@ echo "📦 Auditing $(grep -c '==' "${REQUIREMENTS}") locked packages"
 # pip-audit building a throwaway virtualenv to resolve with, which it does even
 # for a pinned file and which fails where ensurepip cannot run.
 AUDIT=(uvx pip-audit --no-deps --disable-pip --requirement "${REQUIREMENTS}")
+
+if [ -n "${IGNORE_VULNERABILITIES}" ]; then
+  # Split on commas, tolerating spaces after them.
+  IFS=', ' read -r -a ignored <<< "${IGNORE_VULNERABILITIES}"
+  for vuln in "${ignored[@]}"; do
+    [ -n "${vuln}" ] || continue
+    AUDIT+=(--ignore-vuln "${vuln}")
+    echo "🔕 Accepted, not reachable from this project: ${vuln}"
+  done
+fi
 
 # JSON for CI processing, then a human-readable pass. The JSON run is always
 # tolerant so the report artifact exists either way; the second run is the one

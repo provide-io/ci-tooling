@@ -9,6 +9,16 @@ nothing for a repository until that repository moves its `uses:` pin. Note that
 callers pin in two places: the `uses:` line and the `ref:` of the ci-tooling
 checkout used by the TestPyPI verification step.
 
+## [Unreleased]
+
+### Added
+
+- `ignore-vulnerabilities` on `python-ci.yml` and `python-security.yml`, a comma-separated list of advisory IDs passed to `pip-audit --ignore-vuln`.
+
+  A caller can hit an advisory whose fix it cannot take. terraform-provider-pyvider is the case this was written for: cryptography publishes no macOS x86_64 wheel from 49.0.0 on, so the darwin_amd64 package cannot be built above 48.0.1, and three advisories against 48.0.1 are fixed only in 49.0.0 and 50.0.0.
+
+  Without this the choice is to turn `fail-on-vulnerability` off, which stops the audit gating anything at all. An entry here records that the project examined the finding and established it cannot reach the vulnerable code path; the reason belongs at the call site, beside the IDs. Everything not listed still fails the build, so a fourth advisory against the same package is caught.
+
 ## [0.8.4] - 2026-09-05
 
 ### Added
