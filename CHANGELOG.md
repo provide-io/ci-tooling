@@ -11,6 +11,33 @@ checkout used by the TestPyPI verification step.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The dependency audit no longer reports on the scanner.** `python-ci.yml`
+  and `python-security.yml` installed pip-audit into the project virtualenv and
+  then audited that virtualenv, so an advisory against pip-audit's own
+  dependency tree came back as the caller's. `scripts/security/run-pip-audit.sh`
+  now exports the resolved lock (`uv export --no-emit-workspace`, dev groups
+  included, workspace members excluded) and runs pip-audit from `uvx`, where
+  the scanner's requirements are in a separate environment. The wrknv install
+  path spelled the same install differently — `uv pip install --python
+  .venv/bin/python pip-audit` — and is gone too.
+
+  wrknv hit the visible version of this: `safety` pulls in `nltk`, `nltk` drew
+  an unpatched advisory, and the build went red over a package absent from that
+  project's lock.
+
+### Added
+
+- **`fail-on-vulnerability` (default `false`)** on both reusable workflows.
+  The audit has always been wrapped in `|| true`, so a finding could not stop a
+  build — which is also why nothing noticed it was auditing the wrong thing.
+  The default keeps every current caller behaving exactly as before; a
+  repository that wants the audit to gate now has one input to set rather than
+  a workflow to fork. Thirteen repositories call `python-ci.yml`, so flipping
+  the shared default is not this layer's decision to make.
+
+
 ## [0.8.2] - 2026-09-03
 
 A patch: no new input, no new job, no new check. `auto-pin-siblings` is opt-in and was not
