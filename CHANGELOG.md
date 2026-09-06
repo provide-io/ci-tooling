@@ -9,6 +9,18 @@ nothing for a repository until that repository moves its `uses:` pin. Note that
 callers pin in two places: the `uses:` line and the `ref:` of the ci-tooling
 checkout used by the TestPyPI verification step.
 
+## [0.8.6] - 2026-09-06
+
+### Fixed
+
+- Skipped test jobs no longer report their check name with the `matrix` expression un-interpolated.
+
+  A job gated off by `if:` has no `matrix` context, so a `name:` referencing it was emitted verbatim: every consumer setting `run-tests: false`, or whose `platform-preset` excludes an architecture, showed rows reading `🧪 Tests (linux_amd64, py${{ matrix.python-version }})`. Both states were visible in one run — provide-io/pyvider run 33991794320 rendered `py3.11` on the five running legs and the raw expression on the one skipped.
+
+  The names now carry only the platform. GitHub appends the matrix value to a static name on its own, single entry or several, so a running row still reads `🧪 Tests linux_amd64 (3.11)` and a `matrix-testing: true` consumer keeps four distinguishable rows. Parentheses are left out of the platform because GitHub's suffix supplies them.
+
+  **Check names change for every consumer.** Nothing is known to depend on them: all fourteen protected repositories require only `ci / 📌 No Active Pins`. A caller that lists a test job as a required status check must update that name.
+
 ## [0.8.5] - 2026-09-05
 
 ### Added
