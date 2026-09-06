@@ -257,8 +257,15 @@ jobs:
   # ==================================================================================
   # 🧪 Tests - Platform Matrix
   # ==================================================================================
+  # These names carry the platform only. GitHub appends the matrix value itself
+  # -- "🧪 Tests linux_amd64 (3.11)" -- so the Python version is still on every
+  # row, including the four a `matrix-testing: true` consumer spawns. A name that
+  # referenced matrix directly would read back raw as
+  # "py${{ matrix.python-version }}" on any row gated off by `if:`, because a
+  # skipped job has no matrix context to interpolate against. Parentheses are
+  # left out of the platform for the same reason: GitHub's suffix supplies them.
   test:
-    name: 🧪 Tests (linux_amd64, py${{ matrix.python-version }})
+    name: 🧪 Tests linux_amd64
     needs: quality
     if: inputs.run-tests
     runs-on: ubuntu-24.04
@@ -359,7 +366,7 @@ jobs:
 
   # Additional platform tests (standard/full presets)
   test-linux-arm:
-    name: 🧪 Tests (linux_arm64, py${{ matrix.python-version }})
+    name: 🧪 Tests linux_arm64
     needs: quality
     if: inputs.run-tests && (inputs.platform-preset == 'standard' || inputs.platform-preset == 'full') && github.actor != 'nektos/act'
     runs-on: ubuntu-24.04-arm
@@ -449,7 +456,7 @@ jobs:
         run: .venv/bin/we run ci.test
 
   test-macos-arm:
-    name: 🧪 Tests (darwin_arm64, py${{ matrix.python-version }})
+    name: 🧪 Tests darwin_arm64
     needs: quality
     if: inputs.run-tests && (inputs.platform-preset == 'standard' || inputs.platform-preset == 'full') && github.actor != 'nektos/act'
     runs-on: macos-15
@@ -539,7 +546,7 @@ jobs:
         run: .venv/bin/we run ci.test
 
   test-macos-intel:
-    name: 🧪 Tests (darwin_amd64, py${{ matrix.python-version }})
+    name: 🧪 Tests darwin_amd64
     needs: quality
     if: inputs.run-tests && (inputs.platform-preset == 'standard' || inputs.platform-preset == 'full') && github.actor != 'nektos/act'
     runs-on: macos-15-intel
@@ -630,7 +637,7 @@ jobs:
 
   # Windows amd64 tests (full preset or include-windows)
   test-windows:
-    name: 🧪 Tests (windows_amd64, py${{ matrix.python-version }})
+    name: 🧪 Tests windows_amd64
     needs: quality
     if: inputs.run-tests && (inputs.platform-preset == 'full' || inputs.include-windows) && github.actor != 'nektos/act'
     runs-on: windows-2022
@@ -707,7 +714,7 @@ jobs:
           pytest ${{ inputs.test-directory }} -v --tb=short
 
   test-windows-arm:
-    name: 🧪 Tests (windows_arm64, py${{ matrix.python-version }})
+    name: 🧪 Tests windows_arm64
     needs: quality
     # `full` still means every platform, so a caller asking for full is
     # unaffected. What changed is that include-windows no longer drags arm64
