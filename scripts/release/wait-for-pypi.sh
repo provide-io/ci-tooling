@@ -34,23 +34,28 @@ set -euo pipefail
 PKG_NAME="${1:?package name required}"
 PKG_VER="${2:?version required}"
 TIMEOUT="${3:-600}"
-INTERVAL=15
+# Overridable so the tests can exercise the retry and timeout paths without
+# spending a quarter minute per attempt.
+INTERVAL="${WAIT_FOR_PYPI_INTERVAL:-15}"
 
 deadline=$(( $(date +%s) + TIMEOUT ))
 attempt=0
 
 while :; do
     attempt=$(( attempt + 1 ))
-    # Captured before matching, not piped into `grep -q`: under `pipefail` the
-    # early exit of a quiet grep SIGPIPEs pip, the pipeline reports failure, and
-    # a version that is present reads as missing. `|| true` keeps a genuine pip
-    # failure (no such package yet) on the retry path rather than aborting.
+    # `|| true` keeps a genuine pip failure (no such package published yet) on
+    # the retry path rather than aborting the run.
     versions="$(pip index versions "${PKG_NAME}" --index-url https://pypi.org/simple/ 2>/dev/null || true)"
 
     # Anchored on the separators the listing uses, so 0.5.3 does not match
     # 0.5.30. The version is escaped because its dots are regex wildcards.
+    #
+    # Not `grep -q`: a quiet grep stops at the first match, and under `pipefail`
+    # the writer it leaves mid-pipe dies of SIGPIPE and fails the whole
+    # pipeline, so a version that is present reads as missing. Draining the
+    # input is what makes the match independent of how much pip printed.
     escaped="${PKG_VER//./\\.}"
-    if printf '%s' "${versions}" | grep -qE "(^|[ ,(])${escaped}([ ,)]|\$)"; then
+    if printf '%s' "${versions}" | grep -E "(^|[ ,(])${escaped}([ ,)]|\$)" >/dev/null; then
         echo "✅ ${PKG_NAME}==${PKG_VER} is resolvable from PyPI (attempt ${attempt})"
         exit 0
     fi
