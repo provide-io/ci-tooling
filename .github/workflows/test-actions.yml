@@ -224,12 +224,23 @@ jobs:
         run: |
           ci/assert-pins.sh "auto sibling" 2 '"layer": "auto-sibling"' 'provide-foundation@main' 'provide-testkit@main'
 
-      # On a branch, no sibling has a matching branch name, so the same lookup
-      # must come back empty rather than guessing.
-      - name: ✅ Assert sibling matching found nothing off main
-        if: github.ref_name != 'main'
+      # The negative case names a branch no repository can have, so it exercises
+      # the lookup rather than the branch list a sibling happens to carry at the
+      # time. Naming the head ref made a cross-repo change -- the same branch
+      # name in two repos, which is the shape the feature exists for -- fail
+      # here, and the failure was not reproducible from this repository.
+      - name: 📌 Resolve siblings for a branch that cannot exist
+        id: siblings_absent
+        uses: ./actions/resolve-pins
+        with:
+          ci-tooling-path: ${{ github.workspace }}
+          auto-pin-siblings: 'true'
+          sibling-repos: 'provide-foundation,provide-testkit'
+          branch: absent-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: ✅ Assert sibling matching found nothing
         env:
-          PINS: ${{ steps.siblings.outputs.pins }}
+          PINS: ${{ steps.siblings_absent.outputs.pins }}
         run: |
           ci/assert-pins.sh "auto sibling (no match)" 0
 

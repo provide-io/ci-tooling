@@ -38,6 +38,10 @@ inputs:
     description: 'Comma- or newline-separated sibling repository names to consider for auto-pinning. Leave empty to derive them from this project''s own dependencies, which is usually what you want: a sibling you do not depend on should not be pinned'
     required: false
     default: ''
+  branch:
+    description: 'Branch name to match siblings against. Defaults to the head ref, which is what a caller wants; a test supplies its own so the negative case does not depend on which branches a sibling happens to have'
+    required: false
+    default: ''
   allowed-orgs:
     description: 'Glob patterns a pin URL must match, as host/owner/repo'
     required: false
@@ -71,7 +75,7 @@ runs:
         GH_TOKEN: ${{ github.token }}
         CI_TOOLING_PATH: ${{ inputs.ci-tooling-path != '' && inputs.ci-tooling-path || format('{0}/../..', github.action_path) }}
         OWNER: ${{ github.repository_owner }}
-        BRANCH: ${{ github.head_ref || github.ref_name }}
+        BRANCH: ${{ inputs.branch != '' && inputs.branch || github.head_ref || github.ref_name }}
         SIBLINGS: ${{ inputs.sibling-repos }}
       run: "$CI_TOOLING_PATH/scripts/deps/find-sibling-branches.sh"
 
