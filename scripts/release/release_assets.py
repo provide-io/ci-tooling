@@ -48,9 +48,37 @@ def shapes(names: list[str]) -> set[str]:
     return {asset_shape(name) for name in names}
 
 
+def applicable_allowances(allowances: list[str], tag: str) -> tuple[set[str], list[str]]:
+    """Split declared allowances into the ones this release honours, and why.
+
+    An allowance written `shape@v1.2.3` applies only when checking v1.2.3. That
+    is the form to reach for: a rename or a deliberate drop belongs to one
+    release, and an allowance that outlives its reason silently covers the day
+    the artifact goes missing for real.
+
+    A bare `shape` is permanent and is reported, so a reader of the log can see
+    which exemptions are standing rather than scoped.
+    """
+    honoured: set[str] = set()
+    standing: list[str] = []
+    for entry in allowances:
+        shape, _, scope = entry.partition("@")
+        if not scope:
+            honoured.add(shape)
+            standing.append(shape)
+        elif scope == tag:
+            honoured.add(shape)
+    return honoured, standing
+
+
 def missing_shapes(previous: list[str], current: list[str], allowed: set[str]) -> list[str]:
     """Shapes the previous release had that this one does not, minus allowances."""
     return sorted(shapes(previous) - shapes(current) - allowed)
+
+
+def unused_allowances(previous: list[str], current: list[str], allowed: set[str]) -> list[str]:
+    """Allowances that excused nothing, so they are stale and should come out."""
+    return sorted(allowed - (shapes(previous) - shapes(current)))
 
 
 def _assets(repo: str, tag: str) -> list[str]:
@@ -92,7 +120,11 @@ def main(argv: list[str] | None = None) -> int:
         action="append",
         default=[],
         metavar="SHAPE",
-        help="a shape this release drops on purpose, e.g. '<v>.zip.sigstore.json'",
+        help=(
+            "a shape this release drops on purpose. Scope it to the release it "
+            "belongs to -- 'sbom-python.cdx.json@v0.7.1' -- so it expires by "
+            "itself. A bare shape is a standing exemption and never expires."
+        ),
     )
     args = parser.parse_args(argv)
 
@@ -103,7 +135,13 @@ def main(argv: list[str] | None = None) -> int:
 
     before = _assets(args.repo, previous)
     after = _assets(args.repo, args.tag)
-    gone = missing_shapes(before, after, set(args.allow_missing))
+    allowed, standing = applicable_allowances(args.allow_missing, args.tag)
+    gone = missing_shapes(before, after, allowed)
+
+    for shape in standing:
+        print(f"::warning::standing exemption, never expires: {shape}")
+    for shape in unused_allowances(before, after, allowed):
+        print(f"::warning::allowance excused nothing and can be removed: {shape}")
 
     if not gone:
         print(f"✅ {args.tag} carries every shape {previous} did ({len(after)} assets)")
@@ -113,7 +151,8 @@ def main(argv: list[str] | None = None) -> int:
     for shape in gone:
         print(f"::error::  {shape}")
     print(f"::error::{previous} had {len(before)} assets, {args.tag} has {len(after)}.")
-    print("::error::If a removal is deliberate, declare it with --allow-missing '<shape>'.")
+    print("::error::If a removal is deliberate, declare it scoped to this release:")
+    print(f"::error::  --allow-missing '<shape>@{args.tag}'")
     return 1
 
 

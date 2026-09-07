@@ -98,3 +98,44 @@ def test_a_platform_matrix_losing_one_target_is_caught() -> None:
     assert release_assets.missing_shapes(before, after, set()) == [
         "terraform-provider-pyvider_<v>_windows_amd64.zip"
     ]
+
+
+def test_a_scoped_allowance_applies_to_its_own_release() -> None:
+    honoured, standing = release_assets.applicable_allowances(["sbom-python.cdx.json@v0.7.1"], "v0.7.1")
+    assert honoured == {"sbom-python.cdx.json"}
+    assert standing == []
+
+
+def test_a_scoped_allowance_expires_by_itself() -> None:
+    """The release after the rename must not still be excused."""
+    honoured, _ = release_assets.applicable_allowances(["sbom-python.cdx.json@v0.7.1"], "v0.7.2")
+    assert honoured == set()
+
+
+def test_a_bare_allowance_is_standing_and_reported() -> None:
+    honoured, standing = release_assets.applicable_allowances(["<v>.zip"], "v0.7.1")
+    assert honoured == {"<v>.zip"}
+    assert standing == ["<v>.zip"]
+
+
+def test_the_sbom_rename_is_excused_once_then_caught() -> None:
+    """The exact case this ships for, and the release after it."""
+    renamed = [n for n in V0_7_1_COMPLETE if not n.startswith("sbom-")] + [
+        "v0.7.1.sbom.cdx.json",
+        "v0.7.1.sbom.cdx.json.sigstore.json",
+    ]
+    scoped = ["sbom-python.cdx.json@v0.7.1", "sbom-python.cdx.json.sigstore.json@v0.7.1"]
+
+    honoured, _ = release_assets.applicable_allowances(scoped, "v0.7.1")
+    assert release_assets.missing_shapes(V0_7_0, renamed, honoured) == []
+
+    # v0.7.2 compares against v0.7.1, which already has the new names, so the
+    # allowance is not needed -- and would not apply even if left behind.
+    later, _ = release_assets.applicable_allowances(scoped, "v0.7.2")
+    assert later == set()
+
+
+def test_a_stale_allowance_is_reported() -> None:
+    """An allowance excusing nothing is noise that hides the next real loss."""
+    stale = release_assets.unused_allowances(V0_7_0, V0_7_1_COMPLETE, {"<v>.zip"})
+    assert stale == ["<v>.zip"]
