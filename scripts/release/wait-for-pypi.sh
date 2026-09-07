@@ -16,6 +16,13 @@
 # pins the exact version -- fails on a package that is genuinely published. The
 # failure is invisible in the publishing repo and lands in someone else's CI.
 #
+# What this buys is precise: the publishing run goes red rather than green when
+# the index does not catch up. It does not hold a release open. A workflow
+# triggered by `release: published` has already published before this runs, and
+# a consumer reacting to that event can still beat the index; preventing that
+# means publishing the release only after verification, which is a change to
+# the release flow rather than to this script.
+#
 # Resolution is checked with `pip index versions`, which reads the same index
 # through the same CDN a consumer's resolver does. Asking PyPI's JSON API
 # instead would answer from a different cache and clear while consumers still
