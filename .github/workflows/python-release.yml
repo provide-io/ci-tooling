@@ -151,7 +151,7 @@ jobs:
 
       # Produce wheel + sdist into dist/
       - name: 🏗️ Build Package
-        uses: provide-io/ci-tooling/actions/python-build@d65d086993e06a79f3ef5e00e32addf2e26540af  # pinned, see header
+        uses: provide-io/ci-tooling/actions/python-build@2872852d6cf693ed3ed3fd14c42b7c214f69fc37  # pinned, see header
         with:
           build-backend: ${{ inputs.build-backend }}
 
