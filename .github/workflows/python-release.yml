@@ -190,7 +190,7 @@ jobs:
 
       # Create the GH release tagged vX.Y.Z with artifacts attached
       - name: 🏷️ Create GitHub Release
-        uses: provide-io/ci-tooling/actions/github-release@d65d086993e06a79f3ef5e00e32addf2e26540af  # pinned, see header
+        uses: provide-io/ci-tooling/actions/github-release@2872852d6cf693ed3ed3fd14c42b7c214f69fc37  # pinned, see header
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           artifacts-path: dist/
