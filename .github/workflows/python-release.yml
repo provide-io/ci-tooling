@@ -104,7 +104,7 @@ jobs:
 
       # Install the requested Python + uv toolchain via ci-tooling helper
       - name: 🐍 Setup Python Environment
-        uses: provide-io/ci-tooling/actions/setup-python-env@d65d086993e06a79f3ef5e00e32addf2e26540af  # pinned, see header
+        uses: provide-io/ci-tooling/actions/setup-python-env@2872852d6cf693ed3ed3fd14c42b7c214f69fc37  # pinned, see header
         with:
           python-version: ${{ inputs.python-version }}
           uv-version: ${{ inputs.uv-version }}
@@ -140,7 +140,7 @@ jobs:
 
       # Build environment: no dev group since we're only producing wheels/sdist
       - name: 🐍 Setup Python Environment
-        uses: provide-io/ci-tooling/actions/setup-python-env@d65d086993e06a79f3ef5e00e32addf2e26540af  # pinned, see header
+        uses: provide-io/ci-tooling/actions/setup-python-env@2872852d6cf693ed3ed3fd14c42b7c214f69fc37  # pinned, see header
         with:
           python-version: ${{ inputs.python-version }}
           uv-version: ${{ inputs.uv-version }}
