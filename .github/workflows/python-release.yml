@@ -114,7 +114,7 @@ jobs:
 
       # Lint/type-check using shared quality composite
       - name: 🎨 Quality Checks
-        uses: provide-io/ci-tooling/actions/python-quality@d65d086993e06a79f3ef5e00e32addf2e26540af  # pinned, see header
+        uses: provide-io/ci-tooling/actions/python-quality@2872852d6cf693ed3ed3fd14c42b7c214f69fc37  # pinned, see header
 
       # Run the test suite; coverage gate intentionally disabled for release flow
       - name: 🧪 Run Tests
